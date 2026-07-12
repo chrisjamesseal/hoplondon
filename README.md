@@ -38,7 +38,15 @@ export a JSON backup any time from Settings.
 > not tax advice. Check [gov.uk](https://www.gov.uk/self-assessment-tax-returns) or an
 > accountant before filing.
 
-## Running it
+## Using it
+
+Once merged to `main`, the app deploys automatically to GitHub Pages:
+**https://chrisjamesseal.github.io/hoplondon/**
+
+Your data still never leaves your device — the site is static files; everything you
+enter is stored in your own browser.
+
+## Running it locally
 
 ```bash
 npm install
