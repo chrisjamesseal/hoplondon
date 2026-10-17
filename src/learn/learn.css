@@ -480,3 +480,9 @@ button:disabled { cursor: default; }
   .dc-ring, .dc-tick { animation: none; stroke-dashoffset: 0; }
   .dc-spark { opacity: 0; }
 }
+
+/* ---------- centred teach cards ---------- */
+.teach { min-height: calc(100dvh - 400px); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.teach-label { margin-bottom: 8px; }
+.teach-art { margin-bottom: 18px; }
+.teach-card { width: 100%; text-align: center; }
