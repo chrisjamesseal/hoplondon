@@ -283,7 +283,7 @@ button:disabled { cursor: default; }
 .course-row { display: flex; align-items: center; gap: 8px; padding: 14px; flex-wrap: wrap; }
 .course-row.active { border-color: var(--green); }
 .course-row-main { display: flex; gap: 14px; align-items: center; flex: 1; min-width: 0; background: none; border: 0; text-align: left; padding: 0; }
-.course-row-main .course-emoji { font-size: 38px; }
+.course-row-main .course-emoji { font-size: 38px; align-self: flex-start; }
 .course-row-main .row-between { margin-top: 2px; }
 .course-row-main strong { overflow: hidden; text-overflow: ellipsis; }
 .pct { width: 40px; text-align: right; flex-shrink: 0; }
