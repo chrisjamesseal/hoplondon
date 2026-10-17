@@ -19,9 +19,9 @@ export const DEMO_COURSE: Course = {
           id: 'demo-l1',
           title: 'How the Sun works',
           teach: [
-            'The Sun is an ordinary star that holds about 99.8% of all the mass in the Solar System. Everything else, planets included, is a rounding error.',
-            'It runs on nuclear fusion: in the core, hydrogen nuclei are forced together into helium, and a small amount of mass becomes energy. That is the same E = mc² idea behind nuclear power.',
-            'Light leaving the surface reaches us in about 8 minutes 20 seconds, so you always see the Sun as it was a few minutes ago.',
+            'The Sun is an ordinary star that holds about **99.8% of all the mass** in the Solar System. Everything else, planets included, is a rounding error.',
+            'It runs on **nuclear fusion**: in the core, hydrogen nuclei are forced together into helium, and a small amount of mass becomes energy. That is the same E = mc² idea behind nuclear power.',
+            'Light leaving the surface reaches us in about **8 minutes 20 seconds**, so you always see the Sun as it was a few minutes ago.',
           ],
           exercises: [
             { type: 'mcq', prompt: 'What actually powers the Sun?', options: ['Burning gas, like a huge fire', 'Nuclear fusion of hydrogen into helium', 'Heat left over from its formation', 'Radioactive decay of heavy metals'], answer: 1, explanation: 'Fusion in the core turns a tiny fraction of mass into energy. Ordinary burning would have run out within a few thousand years.' },
@@ -41,8 +41,8 @@ export const DEMO_COURSE: Course = {
           title: 'The rocky planets',
           teach: [
             'Mercury, Venus, Earth and Mars are small, dense worlds of rock and metal. Their differences come down mostly to their atmospheres.',
-            'Venus is the hottest planet at around 465°C, even though Mercury is closer to the Sun. Its thick carbon dioxide atmosphere traps heat: a runaway greenhouse effect.',
-            'Mercury has almost no atmosphere, so it swings from about 430°C in daylight to about −180°C at night. Mars is red because its dust is rich in iron oxide, essentially rust.',
+            'Venus is the hottest planet at around 465°C, even though Mercury is closer to the Sun. Its thick carbon dioxide atmosphere traps heat: a **runaway greenhouse effect**.',
+            'Mercury has almost no atmosphere, so it swings from about 430°C in daylight to about −180°C at night. Mars is red because its dust is rich in **iron oxide**, essentially rust.',
           ],
           exercises: [
             { type: 'mcq', prompt: 'Why is Venus hotter than Mercury, despite being further from the Sun?', options: ['Its thick CO₂ atmosphere traps heat', 'It has active volcanoes everywhere', 'It spins much faster', 'It is closer to Jupiter'], answer: 0, explanation: 'A dense carbon dioxide atmosphere creates a runaway greenhouse effect, keeping Venus at around 465°C day and night.' },
@@ -69,9 +69,9 @@ export const DEMO_COURSE: Course = {
           id: 'demo-l3',
           title: 'Gas giants',
           teach: [
-            'Jupiter and Saturn are made mostly of hydrogen and helium, with no solid surface to stand on. Go deeper and the gas simply gets denser and hotter.',
-            'Jupiter has more than twice the mass of all the other planets combined. Its Great Red Spot is a storm wider than Earth that has been watched for well over 150 years.',
-            'Saturn is so light for its size that its average density is lower than water. Its rings are mostly chunks of water ice.',
+            'Jupiter and Saturn are made mostly of **hydrogen and helium**, with no solid surface to stand on. Go deeper and the gas simply gets denser and hotter.',
+            'Jupiter has more than twice the mass of all the other planets combined. Its **Great Red Spot** is a storm wider than Earth that has been watched for well over 150 years.',
+            'Saturn is so light for its size that its average density is **lower than water**. Its rings are mostly chunks of water ice.',
           ],
           exercises: [
             { type: 'mcq', prompt: 'Which statement about Jupiter is true?', options: ['It has more than twice the mass of all other planets combined', 'It has a rocky surface like Earth', 'It is the closest giant planet to the Sun after Saturn', 'Its Great Red Spot is a volcano'], answer: 0, explanation: 'Jupiter dominates the planets by mass. The Great Red Spot is a long-lived storm, not a surface feature.' },
@@ -85,9 +85,9 @@ export const DEMO_COURSE: Course = {
           id: 'demo-l4',
           title: 'Ice giants',
           teach: [
-            'Uranus and Neptune are ice giants. Beneath their atmospheres they are rich in water, ammonia and methane, which astronomers call "ices" even when they are hot and dense.',
-            'Methane in their upper atmospheres absorbs red light, which is why both look blue.',
-            'Uranus is tipped over by about 98 degrees, so it orbits on its side. Each pole gets around 42 years of daylight followed by 42 years of darkness.',
+            'Uranus and Neptune are **ice giants**. Beneath their atmospheres they are rich in water, ammonia and methane, which astronomers call "ices" even when they are hot and dense.',
+            'Methane in their upper atmospheres **absorbs red light**, which is why both look blue.',
+            'Uranus is tipped over by about **98 degrees**, so it orbits on its side. Each pole gets around 42 years of daylight followed by 42 years of darkness.',
           ],
           exercises: [
             { type: 'cloze', sentence: 'Uranus and Neptune look blue because ___ absorbs red light.', answer: 'methane', distractors: ['oxygen', 'helium', 'nitrogen'], explanation: 'Methane soaks up the red end of sunlight, leaving mostly blue to be reflected back.' },

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Course, LessonProgress } from './types'
 import { DEMO_COURSE } from './demo'
+import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
 import { bumpStreak, dayKey, lessonsOn, MAX_HEARTS, regenHearts } from './lib/gamify'
 
 interface LearnState {
@@ -18,12 +19,18 @@ interface LearnState {
   dailyGoal: number
   dailyLessons: number
   sound: boolean
+  /** Finished courses tucked away on the Courses page */
+  archived: string[]
 
   addCourse: (c: Course) => void
   deleteCourse: (id: string) => void
   setActiveCourse: (id: string) => void
   completeLesson: (lessonId: string, accuracy: number, xp: number) => void
   finishPractice: (xp: number) => void
+  /** Marks steps as done after a jump test, without touching ones already done */
+  skipSteps: (ids: string[]) => void
+  archiveCourse: (id: string) => void
+  unarchiveCourse: (id: string) => void
   syncHearts: () => void
   loseHeart: () => void
   refillHearts: () => void
@@ -49,6 +56,7 @@ export const useLearn = create<LearnState>()(
       dailyGoal: 30,
       dailyLessons: 2,
       sound: true,
+      archived: [],
 
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
       deleteCourse: (id) =>
@@ -56,8 +64,10 @@ export const useLearn = create<LearnState>()(
           const course = s.courses.find((c) => c.id === id)
           const lessonIds = new Set(course?.units.flatMap((u) => u.lessons.map((l) => l.id)))
           const courses = s.courses.filter((c) => c.id !== id)
+          for (const u of course?.units ?? []) lessonIds.add(`quiz:${u.id}`)
           return {
             courses,
+            archived: (s.archived ?? []).filter((x) => x !== id),
             progress: Object.fromEntries(Object.entries(s.progress).filter(([k]) => !lessonIds.has(k))),
             activeCourseId: s.activeCourseId === id ? (courses[0]?.id ?? null) : s.activeCourseId,
           }
@@ -95,6 +105,22 @@ export const useLearn = create<LearnState>()(
             heartsUpdatedAt: Date.now(),
           }
         }),
+      skipSteps: (ids) =>
+        set((s) => {
+          const today = dayKey()
+          const progress = { ...s.progress }
+          for (const id of ids) {
+            if (!progress[id]?.completions) progress[id] = { completions: 1, bestAccuracy: 0, lastCompleted: today, skipped: true }
+          }
+          return { progress, streak: bumpStreak(s.streak, s.lastActiveDay, today), lastActiveDay: today }
+        }),
+      archiveCourse: (id) =>
+        set((s) => {
+          const archived = [...new Set([...(s.archived ?? []), id])]
+          const live = s.courses.filter((c) => !archived.includes(c.id))
+          return { archived, activeCourseId: s.activeCourseId === id ? (live[0]?.id ?? id) : s.activeCourseId }
+        }),
+      unarchiveCourse: (id) => set((s) => ({ archived: (s.archived ?? []).filter((x) => x !== id), activeCourseId: id })),
       syncHearts: () => {
         const { hearts, heartsUpdatedAt } = get()
         const next = regenHearts(hearts, heartsUpdatedAt, Date.now())
@@ -114,13 +140,29 @@ export const useLearn = create<LearnState>()(
     }),
     {
       name: 'leap-v1',
-      version: 3,
-      migrate: (persisted) => {
+      version: 4,
+      migrate: (persisted, version) => {
         // v1 stored a Claude API key; drop it
         const { apiKey: _drop, ...rest } = (persisted ?? {}) as Record<string, unknown>
         // v3 rewrote the starter course; lesson ids are unchanged so progress carries over
         if (Array.isArray(rest.courses)) {
           rest.courses = (rest.courses as Course[]).map((c) => (c.id === DEMO_COURSE.id ? DEMO_COURSE : c))
+        }
+        // v4 grew the travel phrase courses to 5 units; carry progress over by lesson title
+        if (version < 4 && Array.isArray(rest.courses)) {
+          const progress = { ...((rest.progress ?? {}) as Record<string, LessonProgress>) }
+          rest.courses = (rest.courses as Course[]).map((c) => {
+            const lang = c.source.kind === 'language' ? LANGUAGES.find((l) => languageLabel(l) === c.source.label) : undefined
+            if (!lang) return c
+            const fresh = { ...buildLanguageCourse(lang), id: c.id, createdAt: c.createdAt }
+            const newByTitle = new Map(fresh.units.flatMap((u) => u.lessons).reverse().map((l) => [l.title, l.id]))
+            for (const old of c.units.flatMap((u) => u.lessons)) {
+              const to = newByTitle.get(old.title)
+              if (to && progress[old.id]) progress[to] = progress[old.id]
+            }
+            return fresh
+          })
+          rest.progress = progress
         }
         return rest as unknown as LearnState
       },

@@ -21,9 +21,11 @@ const FORMAT = `{
         {
           "title": "Max 5 words",
           "emoji": "🔭",
-          "teach": ["Short teaching card.", "Another short card."],
+          "teach": ["Short teaching card with a **key term** highlighted.", "Another short card."],
+          "phrases": [{ "text": "Wie viel kostet das?", "say": "vee FEEL KOS-tet dahs", "meaning": "How much is it?", "words": [{ "w": "Wie viel", "m": "how much" }, { "w": "kostet", "m": "costs" }, { "w": "das", "m": "that" }] }],
           "exercises": [
             { "type": "mcq", "prompt": "Question?", "options": ["A", "B", "C", "D"], "answer": 0, "explanation": "Why A is right." },
+            { "type": "mcq", "prompt": "Listen. What does it mean?", "audio": "Wie viel kostet das?", "options": ["How much is it?", "Where is the station?", "Can I pay by card?", "What time is it?"], "answer": 0, "explanation": "Why." },
             { "type": "tf", "statement": "A clear statement.", "answer": true, "explanation": "Why." },
             { "type": "cloze", "sentence": "A sentence with one ___ gap.", "answer": "word", "distractors": ["other", "wrong", "words"], "explanation": "Why." },
             { "type": "match", "prompt": "Match the pairs", "pairs": [{ "left": "Term", "right": "Short meaning" }] }
@@ -45,9 +47,11 @@ Depth
 - Build from foundations to genuinely useful, more nuanced ideas by the final unit.
 
 Structure
-- 3 to 5 units that build on each other. Unit titles look like "Unit 1: The foundations".
+- 3 to 6 units that build on each other (language courses need more, see below). Unit titles look like "Unit 1: The foundations".
 - 2 to 4 lessons per unit, each on one clear idea, with a short title (max 5 words).
 - Each lesson has 2 or 3 "teach" cards (one to three short sentences each) that teach everything its exercises test, then 6 to 8 exercises.
+- In every teach card, wrap the one or two most important terms in **double asterisks** so the app can highlight them. Do the same for the key term in explanations.
+- The app adds a quiz after each unit automatically, so later lessons can assume earlier ones were learned.
 
 Exercises (mix all four types in every lesson)
 - Test understanding and application, not just recall. Include short real-world scenarios ("A colleague says X. What is the best response?").
@@ -56,6 +60,16 @@ Exercises (mix all four types in every lesson)
 - cloze: exactly one "___" gap; "answer" is the missing word or short phrase (often a key term); 3 plausible "distractors" of the same kind.
 - match: 3 or 4 pairs, such as terms and meanings or causes and effects, each side under 8 words.
 - Every explanation is one or two clear sentences on why the answer is right, adding a useful detail where it helps.
+
+If the course teaches a language
+- Add "lang" at the top level: the speech code for the language, such as "de-DE" or "es-ES".
+- 8 to 12 units, each with 3 or 4 lessons. Start with survival phrases and build to simple conversations.
+- Every lesson introduces 2 to 4 new phrases in "phrases". Each has "text", "say" (easy pronunciation for an English speaker), "meaning", and "words": the meaning of each word or short chunk, in order, so learners see how the phrase is built.
+- Repeat earlier phrases often in later lessons, in new combinations and new question types, so each phrase comes back many times. Some lessons can be pure review.
+- Wrong options must look like the right answer: same language, similar length and word count, same kind of phrase. Never put a one word answer next to a full sentence, or a question next to a greeting.
+- Include listening questions: an mcq whose "audio" is the foreign phrase to read aloud, with "prompt": "Listen. What does it mean?".
+- Use teach cards to explain grammar briefly where it helps, such as word order or formal and informal "you".
+- "phrases" and "audio" are only for language courses; leave them out otherwise.
 
 Style
 - Never use em dashes or en dashes.

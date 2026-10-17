@@ -67,7 +67,10 @@ const phrasesOf = (v: unknown): Phrase[] =>
   (Array.isArray(v) ? v : [])
     .map((p) => {
       const r = (p ?? {}) as Record<string, unknown>
-      return { text: str(r.text), say: str(r.say) || undefined, meaning: str(r.meaning) }
+      const words = (Array.isArray(r.words) ? r.words : [])
+        .map((w) => ({ w: str((w as Record<string, unknown>)?.w), m: str((w as Record<string, unknown>)?.m) }))
+        .filter((w) => w.w && w.m)
+      return { text: str(r.text), say: str(r.say) || undefined, meaning: str(r.meaning), words: words.length ? words : undefined }
     })
     .filter((p) => p.text && p.meaning)
     .slice(0, 8)

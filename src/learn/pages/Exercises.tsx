@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ClozeExercise, MatchExercise, McqExercise, TrueFalseExercise } from '../types'
 import { shuffle } from '../lib/gamify'
 import { BLANK } from '../lib/normalize'
 import { canSpeak, speak } from '../lib/speech'
+import { RichText } from './RichText'
 
 export function SpeakButton({ text, lang, big = false }: { text: string; lang?: string; big?: boolean }) {
   if (!canSpeak()) return null
@@ -28,14 +30,9 @@ const mark = (i: number, value: number | null, reveal?: number) =>
 export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<McqExercise> & { lang?: string }) {
   const [lead, ...rest] = ex.prompt.split('\n\n')
   return (
-    <div className="ex">
-      {ex.audio && canSpeak() && (
-        <button type="button" className="listen-btn" onClick={() => speak(ex.audio!, lang)}>
-          <span aria-hidden>🔊</span> Tap to listen
-        </button>
-      )}
+    <div className={`ex ${ex.audio && canSpeak() ? 'has-dock' : ''}`}>
       <h2 className="ex-title">{rest.length ? lead : 'Choose the right answer'}</h2>
-      <p className="ex-prompt">{rest.length ? <Gap text={rest.join('\n\n')} /> : ex.prompt}</p>
+      <p className="ex-prompt">{rest.length ? <Gap text={rest.join('\n\n')} /> : <RichText text={ex.prompt} />}</p>
       <div className="choices">
         {ex.options.map((o, i) => (
           <button key={i} className={`choice ${mark(i, value, reveal)}`} disabled={locked} onClick={() => onChange(i)}>
@@ -44,6 +41,17 @@ export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<M
           </button>
         ))}
       </div>
+      {/* Sits just above the bottom bar, where a thumb can reach it */}
+      {/* Rendered on the page body so the question's entrance animation can't move it */}
+      {ex.audio &&
+        canSpeak() &&
+        !locked &&
+        createPortal(
+          <button type="button" className="listen-btn dock" onClick={() => speak(ex.audio!, lang)}>
+            <span aria-hidden>🔊</span> Tap to listen
+          </button>,
+          document.body,
+        )}
     </div>
   )
 }
@@ -52,7 +60,9 @@ export function TrueFalse({ ex, value, onChange, locked, reveal }: ChoiceProps<T
   return (
     <div className="ex">
       <h2 className="ex-title">True or false?</h2>
-      <p className="ex-prompt statement">{ex.statement}</p>
+      <p className="ex-prompt statement">
+        <RichText text={ex.statement} />
+      </p>
       <div className="tf">
         {['True', 'False'].map((label, i) => (
           <button key={label} className={`choice tf-btn ${mark(i, value, reveal)}`} disabled={locked} onClick={() => onChange(i)}>
@@ -75,11 +85,11 @@ export function Cloze({ ex, tiles, value, onChange, locked }: ChoiceProps<ClozeE
     <div className="ex">
       <h2 className="ex-title">Fill in the gap</h2>
       <p className="ex-prompt cloze-sentence">
-        {before}
+        <RichText text={before} />
         <button className={`gap ${value !== null ? 'filled' : ''}`} disabled={locked || value === null} onClick={() => onChange(null)}>
           {value !== null ? tiles[value] : ' '}
         </button>
-        {after}
+        <RichText text={after ?? ''} />
       </p>
       <div className="tiles">
         {tiles.map((t, i) => (
@@ -157,7 +167,7 @@ function Gap({ text }: { text: string }) {
     <>
       {parts.map((p, i) => (
         <span key={i}>
-          {p}
+          <RichText text={p} />
           {i < parts.length - 1 && <span className="gap static">{' '}</span>}
         </span>
       ))}
