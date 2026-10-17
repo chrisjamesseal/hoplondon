@@ -22,6 +22,8 @@
   --orange-dark: #e08500;
   --pink: #ff86d0;
   --pink-dark: #db6cb0;
+  --teal: #00cd9c;
+  --teal-dark: #00a67e;
   --locked: #e5e5e5;
   --locked-dark: #cecece;
   --radius: 16px;
@@ -207,6 +209,7 @@ button:disabled { cursor: default; }
 .unit-banner.purple { --c: var(--purple); --d: var(--purple-dark); }
 .unit-banner.orange { --c: var(--orange); --d: var(--orange-dark); }
 .unit-banner.pink { --c: var(--pink); --d: var(--pink-dark); }
+.unit-banner.teal { --c: var(--teal); --d: var(--teal-dark); }
 .unit-progress { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; width: 80px; flex-shrink: 0; font-size: 13px; }
 .unit-progress .pbar { width: 100%; flex: none; background: rgba(0,0,0,0.18); }
 .nodes { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 64px 0 10px; }
@@ -221,6 +224,7 @@ button:disabled { cursor: default; }
 .node.purple { --c: var(--purple); --d: var(--purple-dark); }
 .node.orange { --c: var(--orange); --d: var(--orange-dark); }
 .node.pink { --c: var(--pink); --d: var(--pink-dark); }
+.node.teal { --c: var(--teal); --d: var(--teal-dark); }
 .node.done { --c: var(--gold); --d: var(--gold-dark); }
 .node.locked { --c: var(--locked); --d: var(--locked-dark); font-size: 24px; }
 .node-label { margin-top: 12px; font-size: 13px; color: var(--muted); max-width: 140px; text-align: center; line-height: 1.2; }
@@ -657,3 +661,9 @@ button:disabled { cursor: default; }
   .side-icon { display: grid; place-items: center; width: 44px; height: 36px; font-size: 24px; line-height: 1; border: 2px solid transparent; border-radius: 12px; }
   .side-link.active .side-icon { background: var(--blue-soft); border-color: var(--blue); }
 }
+
+/* a soft neutral plate behind an emoji that would otherwise clash with its card or button */
+.unit-emoji.plate, .node-emoji.plate { display: inline-grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, 0.92); box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08); }
+.unit-emoji.plate { width: 56px; height: 56px; font-size: 32px; }
+.node-emoji { display: inline-grid; place-items: center; line-height: 1; }
+.node-emoji.plate { width: 46px; height: 46px; font-size: 26px; }
