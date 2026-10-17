@@ -15,7 +15,6 @@ interface LearnState {
   hearts: number
   heartsUpdatedAt: number
   dailyGoal: number
-  apiKey: string
   sound: boolean
 
   addCourse: (c: Course) => void
@@ -26,7 +25,6 @@ interface LearnState {
   syncHearts: () => void
   loseHeart: () => void
   refillHearts: () => void
-  setApiKey: (k: string) => void
   setDailyGoal: (n: number) => void
   setSound: (on: boolean) => void
   resetProgress: () => void
@@ -45,7 +43,6 @@ export const useLearn = create<LearnState>()(
       hearts: MAX_HEARTS,
       heartsUpdatedAt: Date.now(),
       dailyGoal: 30,
-      apiKey: '',
       sound: true,
 
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
@@ -104,12 +101,19 @@ export const useLearn = create<LearnState>()(
           return { hearts: Math.max(0, cur.hearts - 1), heartsUpdatedAt: cur.hearts >= MAX_HEARTS ? now : cur.updatedAt }
         }),
       refillHearts: () => set({ hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
-      setApiKey: (apiKey) => set({ apiKey: apiKey.trim() }),
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
       setSound: (sound) => set({ sound }),
       resetProgress: () => set({ progress: {}, xp: 0, xpByDay: {}, streak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
     }),
-    { name: 'leap-v1', version: 1 },
+    {
+      name: 'leap-v1',
+      version: 2,
+      // v1 stored a Claude API key; drop it
+      migrate: (persisted) => {
+        const { apiKey: _drop, ...rest } = (persisted ?? {}) as Record<string, unknown>
+        return rest as unknown as LearnState
+      },
+    },
   ),
 )
 

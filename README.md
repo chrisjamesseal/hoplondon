@@ -91,14 +91,13 @@ Give it a source and it builds a course of units and lessons:
 
 ### How lessons are made
 
-- **Claude mode** (add an Anthropic API key on the Profile page): Claude reads the PDF,
-  topic or page and writes the course as structured JSON. Links Claude can't get via the
-  browser are fetched with Claude's web fetch tool. Code: `src/learn/lib/claudeGen.ts`.
-- **Basic mode** (no key): text is pulled out in the browser (pdf.js for PDFs, the
-  Wikipedia API for topics, a reader proxy for links) and turned into exercises from key
-  terms and sentences. Code: `src/learn/lib/offlineGen.ts`.
+- **With Claude**: Leap writes a prompt for your topic, link or PDF. Open it in the Claude
+  app, Claude makes a `leap-course.json` file, and you upload it (or paste the JSON) back
+  into Leap. Code: `src/learn/lib/claudePrompt.ts`.
+- **Quick**: text is pulled out in the browser (pdf.js for PDFs, the Wikipedia API for
+  topics, a reader proxy for links) and turned into exercises from key terms and
+  sentences. Code: `src/learn/lib/offlineGen.ts`.
 
-Everything (courses, progress, key) is stored in your browser only. The key is sent only
-to Anthropic.
+Everything (courses and progress) is stored in your browser only.
 
 Code lives in `src/learn/`; the entry page is `learn/index.html`.

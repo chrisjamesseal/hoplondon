@@ -12,8 +12,6 @@ const GOALS = [
 
 export default function Profile() {
   const s = useLearn()
-  const [key, setKey] = useState(s.apiKey)
-  const [saved, setSaved] = useState(false)
   const [resetAsk, setResetAsk] = useState(false)
 
   const lvl = levelInfo(s.xp)
@@ -128,33 +126,6 @@ export default function Profile() {
         </div>
       </Card>
 
-      <Card>
-        <h2>✨ Claude lessons</h2>
-        <p className="small muted">
-          With a Claude API key, Claude reads your PDF, topic or link and writes proper lessons. Without one, Leap builds simpler lessons from the
-          text itself. Your key stays in this browser and is only sent to Anthropic.
-        </p>
-        <div className="key-row">
-          <input
-            className="input"
-            type="password"
-            placeholder="sk-ant-…"
-            value={key}
-            onChange={(e) => (setKey(e.target.value), setSaved(false))}
-            autoComplete="off"
-          />
-          <button className="btn blue" onClick={() => (s.setApiKey(key), setSaved(true))}>
-            Save
-          </button>
-        </div>
-        {saved && <p className="tiny good">{key.trim() ? 'Saved. Claude mode is on ✨' : 'Key removed. Basic mode is on.'}</p>}
-        <p className="tiny muted">
-          Get a key at{' '}
-          <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">
-            console.anthropic.com
-          </a>
-        </p>
-      </Card>
 
       <Card>
         <h2>Settings</h2>

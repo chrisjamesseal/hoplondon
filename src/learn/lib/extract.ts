@@ -47,7 +47,7 @@ async function wikiExtract(params: string): Promise<{ title: string; text: strin
 /** Best-matching Wikipedia article for a typed topic */
 export async function topicToText(topic: string): Promise<{ title: string; text: string }> {
   const hit = await wikiExtract(`generator=search&gsrlimit=1&gsrsearch=${encodeURIComponent(topic)}`)
-  if (!hit) throw new Error(`Couldn't find anything on “${topic}”. Try different words, or add a Claude API key in Settings so Claude can teach it from its own knowledge.`)
+  if (!hit) throw new Error(`Couldn't find anything on “${topic}”. Try different words, or switch to With Claude.`)
   return hit
 }
 
@@ -95,5 +95,5 @@ export async function linkToText(rawUrl: string): Promise<{ title: string; text:
     // most sites block cross-origin reads
   }
 
-  throw new Error("Couldn't read that page. It may be private or block apps from reading it. Try copying the text into a PDF, or add a Claude API key in Settings.")
+  throw new Error("Couldn't read that page. It may be private or block apps from reading it. Try switching to With Claude, which can read most pages.")
 }
