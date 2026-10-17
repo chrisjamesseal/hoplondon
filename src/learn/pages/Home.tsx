@@ -5,7 +5,7 @@ import { courseProgress, dayKey, flatLessons, lessonsOn, nextStep } from '../lib
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
-import { titleCase } from '../lib/titleCase'
+import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
@@ -92,16 +92,18 @@ export default function Home() {
       <h2 className="section-title">🗺️ Your Units</h2>
       {course.units.map((unit, ui) => {
         const done = unit.lessons.filter((l) => progress[l.id]?.completions).length
+        const { label, name } = splitUnitTitle(unit.title)
         return (
           <Link key={unit.id} to="/path" className="card unit-row">
             <span className="unit-row-emoji">{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
             <div className="unit-row-main">
               <div className="unit-row-head">
-                <strong>{titleCase(unit.title)}</strong>
+                {label ? <span className="unit-pill">{label}</span> : <span />}
                 <span className="unit-row-count">
                   {done}/{unit.lessons.length}
                 </span>
               </div>
+              <strong>{name}</strong>
               <span className="muted small">{plainText(unit.description)}</span>
               <ProgressBar value={done / unit.lessons.length} color="gold" height={10} label={`${unit.title} progress`} />
             </div>

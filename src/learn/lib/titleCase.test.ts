@@ -21,3 +21,15 @@ describe('titleCase', () => {
     expect(titleCase("follow-up emails that don't annoy")).toBe("Follow-Up Emails That Don't Annoy")
   })
 })
+
+describe('splitUnitTitle', () => {
+  it('splits the unit number from the name', async () => {
+    const { splitUnitTitle } = await import('./titleCase')
+    expect(splitUnitTitle('Unit 1: the foundations')).toEqual({ label: 'Unit 1', name: 'The Foundations' })
+    expect(splitUnitTitle('unit 12 - closing and growth')).toEqual({ label: 'Unit 12', name: 'Closing and Growth' })
+  })
+  it('leaves other titles whole with no label', async () => {
+    const { splitUnitTitle } = await import('./titleCase')
+    expect(splitUnitTitle('Getting started')).toEqual({ label: null, name: 'Getting Started' })
+  })
+})

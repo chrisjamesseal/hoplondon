@@ -620,3 +620,10 @@ button:disabled { cursor: default; }
 
 /* delete lives at the bottom of the course page, quieter than the main actions */
 .home-page .delete-course { margin-top: 12px; }
+
+/* home unit list: "Unit 1" pill on the left, lesson count on the right, name below */
+.unit-row-head { align-items: center; }
+.unit-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 99px; background: var(--surface-2); border: 2px solid var(--border);
+  color: var(--text); font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;
+}
