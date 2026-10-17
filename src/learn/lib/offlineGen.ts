@@ -1,7 +1,7 @@
 /**
  * Builds a course from plain text with no AI: picks key terms by frequency and
  * turns informative sentences into gap-fills, true/false, multiple choice and
- * matching exercises. Used when no Claude API key is set.
+ * matching exercises. Used by Quick mode.
  */
 import { shuffle } from './gamify'
 import { BLANK } from './normalize'
@@ -183,7 +183,7 @@ function lessonExercises(sentences: string[], terms: string[]): RawExercise[] {
 export function generateOffline(title: string, text: string) {
   const sections = toSections(text)
   const all = sections.flatMap((s) => s.sentences)
-  if (all.length < 6) throw new Error('Not enough readable text to build lessons from. Try a longer document, or add a Claude API key in Settings for smarter lessons.')
+  if (all.length < 6) throw new Error('Not enough readable text to build lessons from. Try a longer document, or switch to With Claude.')
   const terms = keyTerms(all)
 
   const lessons = sections

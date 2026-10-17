@@ -15,11 +15,22 @@ export default function Courses() {
     <div className="courses">
       <div className="row-between">
         <h1>My courses</h1>
-        <Link to="/create" className="btn green small-btn">
-          + New
-        </Link>
+        {courses.length > 0 && (
+          <Link to="/create" className="btn green small-btn">
+            + New
+          </Link>
+        )}
       </div>
-      {courses.length === 0 && <p className="muted">No courses yet. Make one from a PDF, topic or link.</p>}
+      {courses.length === 0 && (
+        <Card className="empty">
+          <div className="big-emoji">📚</div>
+          <h2>No courses yet</h2>
+          <p className="muted">Make one from a PDF, a topic or a link and it will show up here.</p>
+          <Link to="/create" className="btn green">
+            Create a course
+          </Link>
+        </Card>
+      )}
       <div className="course-list">
         {courses.map((c) => {
           const cp = courseProgress(c, progress)
