@@ -1,16 +1,20 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLearn } from '../store'
 import { courseProgress } from '../lib/gamify'
 import { Card, ProgressBar } from '../components'
 import type { Course } from '../types'
 import { titleCase } from '../lib/titleCase'
+import { categoryById, categoryOf } from '../lib/categorise'
 
 export default function Courses() {
   const { courses, progress, activeCourseId, setActiveCourse, archived, unarchiveCourse } = useLearn()
   const navigate = useNavigate()
   const archivedIds = archived ?? []
-  const live = courses.filter((c) => !archivedIds.includes(c.id))
-  const shelf = courses.filter((c) => archivedIds.includes(c.id))
+  const { cat } = useParams()
+  const category = categoryById(cat)
+  const inCategory = category ? courses.filter((c) => categoryOf(c).id === category.id) : courses
+  const live = inCategory.filter((c) => !archivedIds.includes(c.id))
+  const shelf = inCategory.filter((c) => archivedIds.includes(c.id))
 
   const row = (c: Course, inArchive: boolean) => {
     const cp = courseProgress(c, progress)
@@ -47,7 +51,14 @@ export default function Courses() {
   return (
     <div className="courses">
       <div className="row-between">
-        <h1>My Courses</h1>
+        <div className="cat-head">
+          <Link to="/courses" className="icon-btn cat-back" aria-label="Back to categories">
+            ‹
+          </Link>
+          <h1>
+            {category ? `${category.emoji} ${category.label}` : 'My Courses'}
+          </h1>
+        </div>
         {courses.length > 0 && (
           <Link to="/create" className="btn green small-btn">
             + New

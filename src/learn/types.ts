@@ -71,6 +71,8 @@ export interface Course {
   /** Speech language code such as es-ES, for reading phrases aloud */
   lang?: string
   summary: string
+  /** Optional general heading such as sales or youtube; worked out from the title when missing */
+  category?: string
   source: { kind: SourceKind; label: string }
   generator: 'claude' | 'offline' | 'demo'
   createdAt: string

@@ -7,6 +7,7 @@ import Path from './pages/Path'
 import Create from './pages/Create'
 import LessonPage from './pages/LessonPage'
 import Courses from './pages/Courses'
+import CourseCategories from './pages/CourseCategories'
 import Profile from './pages/Profile'
 
 const NAV = [
@@ -88,7 +89,8 @@ export default function LearnApp() {
             <Route path="/" element={<Home />} />
             <Route path="/path" element={<Path />} />
             <Route path="/create" element={<Create />} />
-            <Route path="/courses" element={<Courses />} />
+            <Route path="/courses" element={<CourseCategories />} />
+            <Route path="/courses/:cat" element={<Courses />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
