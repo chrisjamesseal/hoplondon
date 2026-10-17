@@ -5,6 +5,7 @@ import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, flatLessons, lessonXp, liveStreak, MAX_HEARTS, nextHeartIn, shuffle } from '../lib/gamify'
 import { play } from '../lib/sound'
 import { Confetti, ProgressBar } from '../components'
+import { pickEmoji } from '../lib/emoji'
 import { Cloze, clozeTiles, Match, Mcq, TrueFalse } from './Exercises'
 
 interface Item {
@@ -51,12 +52,12 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
 
   // Practice pulls a mix from lessons already done in the current course
   const session = useMemo(() => {
-    if (!practice) return found ? { title: found.lesson.title, teach: found.lesson.teach, exercises: found.lesson.exercises } : null
+    if (!practice) return found ? { title: found.lesson.title, emoji: pickEmoji(found.lesson.emoji, found.lesson.title), teach: found.lesson.teach, exercises: found.lesson.exercises } : null
     if (!activeCourse) return null
     const lessons = flatLessons(activeCourse)
     const done = lessons.filter((l) => store.progress[l.id]?.completions)
     const pool = (done.length ? done : lessons.slice(0, 1)).flatMap((l) => l.exercises)
-    return { title: 'Practice', teach: [], exercises: shuffle(pool).slice(0, 8) }
+    return { title: 'Practice', emoji: '💪', teach: [], exercises: shuffle(pool).slice(0, 8) }
     // Build the session once per visit, not on every store change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [practice, lessonId])
@@ -153,7 +154,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
   if (!session || (!practice && !found) || total === 0) return <Navigate to="/" replace />
 
   const progressValue = phase === 'done' ? 1 : solved / total
-  const quit = () => (phase === 'quiz' && solved > 0 ? setQuitAsk(true) : navigate('/'))
+  const quit = () => (phase === 'quiz' && solved > 0 ? setQuitAsk(true) : navigate('/path'))
 
   if (phase === 'done') {
     const course = found?.course ?? activeCourse
@@ -198,7 +199,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
         <footer className="check-bar">
           <div className="check-inner">
             <span />
-            <button className="btn green" autoFocus onClick={() => navigate('/')}>
+            <button className="btn green" autoFocus onClick={() => navigate('/path')}>
               Continue
             </button>
           </div>
@@ -219,7 +220,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
             <button className="btn blue wide" onClick={() => navigate('/practice')}>
               💪 Practise to refill
             </button>
-            <Link to="/" className="btn ghost wide">
+            <Link to="/path" className="btn ghost wide">
               No thanks
             </Link>
           </div>
@@ -242,6 +243,9 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
         {phase === 'teach' && (
           <div className="teach">
             <div className="teach-label">💡 Learn · {session.title}</div>
+            <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
+              {session.emoji}
+            </div>
             <div key={teachIdx} className="teach-card pop">
               {session.teach[teachIdx]}
             </div>
@@ -327,7 +331,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
             <button className="btn blue wide" onClick={() => setQuitAsk(false)}>
               Keep learning
             </button>
-            <button className="btn ghost wide danger-text" onClick={() => navigate('/')}>
+            <button className="btn ghost wide danger-text" onClick={() => navigate('/path')}>
               End lesson
             </button>
           </div>

@@ -8,6 +8,11 @@ export function uid(prefix = ''): string {
 const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 const strs = (v: unknown): string[] => (Array.isArray(v) ? v.map(str).filter(Boolean) : [])
 
+const emojiOf = (v: unknown): string | undefined => {
+  const e = [...str(v)].slice(0, 4).join('')
+  return e && /\p{Extended_Pictographic}/u.test(e) ? e : undefined
+}
+
 export const BLANK = '___'
 
 /** Turns loosely-shaped exercise JSON into a valid exercise, or null if unusable */
@@ -69,12 +74,13 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
           return {
             id: uid('l_'),
             title: str(lr.title) || 'Lesson',
+            emoji: emojiOf(lr.emoji),
             teach: strs(lr.teach).slice(0, 4),
             exercises: (Array.isArray(lr.exercises) ? lr.exercises : []).map(normalizeExercise).filter((e): e is Exercise => !!e),
           }
         })
         .filter((l) => l.exercises.length >= 2)
-      return { id: uid('u_'), title: str(ur.title) || 'Unit', description: str(ur.description), lessons }
+      return { id: uid('u_'), title: str(ur.title) || 'Unit', emoji: emojiOf(ur.emoji), description: str(ur.description), lessons }
     })
     .filter((u) => u.lessons.length > 0)
 

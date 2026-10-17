@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useActiveCourse, useLearn } from './store'
 import { dayKey, liveStreak } from './lib/gamify'
+import Home from './pages/Home'
 import Path from './pages/Path'
 import Create from './pages/Create'
 import LessonPage from './pages/LessonPage'
@@ -9,7 +10,8 @@ import Courses from './pages/Courses'
 import Profile from './pages/Profile'
 
 const NAV = [
-  { to: '/', label: 'Learn', icon: '🏠' },
+  { to: '/', label: 'Home', icon: '🏠' },
+  { to: '/path', label: 'Path', icon: '🗺️' },
   { to: '/create', label: 'New course', icon: '✨' },
   { to: '/courses', label: 'Courses', icon: '📚' },
   { to: '/profile', label: 'Profile', icon: '🐸' },
@@ -80,7 +82,8 @@ export default function LearnApp() {
         </header>
         <main className="page">
           <Routes>
-            <Route path="/" element={<Path />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/path" element={<Path />} />
             <Route path="/create" element={<Create />} />
             <Route path="/courses" element={<Courses />} />
             <Route path="/profile" element={<Profile />} />

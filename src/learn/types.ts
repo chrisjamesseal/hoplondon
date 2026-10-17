@@ -35,6 +35,8 @@ export type Exercise = McqExercise | TrueFalseExercise | ClozeExercise | MatchEx
 export interface Lesson {
   id: string
   title: string
+  /** Picture shown big on the teach cards and on the path node */
+  emoji?: string
   /** Short teaching cards shown before the exercises */
   teach: string[]
   exercises: Exercise[]
@@ -43,6 +45,7 @@ export interface Lesson {
 export interface Unit {
   id: string
   title: string
+  emoji?: string
   description: string
   lessons: Lesson[]
 }

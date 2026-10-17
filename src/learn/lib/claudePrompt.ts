@@ -15,10 +15,12 @@ const FORMAT = `{
   "units": [
     {
       "title": "Unit 1: The basics",
+      "emoji": "🌱",
       "description": "Short line on what this unit covers",
       "lessons": [
         {
           "title": "Max 5 words",
+          "emoji": "🔭",
           "teach": ["Short teaching card.", "Another short card."],
           "exercises": [
             { "type": "mcq", "prompt": "Question?", "options": ["A", "B", "C", "D"], "answer": 0, "explanation": "Why A is right." },
@@ -43,6 +45,9 @@ Exercises (mix all four types in every lesson)
 - cloze: exactly one "___" gap; "answer" is the missing word or short phrase; 3 plausible "distractors" of the same kind.
 - match: 3 or 4 pairs, each side under 8 words.
 - Every explanation is one friendly sentence.
+
+Pictures
+- Give every unit and every lesson one "emoji" that fits its topic. Use a different emoji for each lesson.
 
 Style
 - Plain, warm, encouraging English. Short sentences. Explain jargon before using it.
