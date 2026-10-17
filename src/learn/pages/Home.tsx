@@ -94,13 +94,15 @@ export default function Home() {
           <Link key={unit.id} to="/path" className="card unit-row">
             <span className="unit-row-emoji">{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
             <div className="unit-row-main">
-              <strong>{titleCase(unit.title)}</strong>
+              <div className="unit-row-head">
+                <strong>{titleCase(unit.title)}</strong>
+                <span className="unit-row-count">
+                  {done}/{unit.lessons.length}
+                </span>
+              </div>
               <span className="muted small">{plainText(unit.description)}</span>
               <ProgressBar value={done / unit.lessons.length} color="gold" height={10} label={`${unit.title} progress`} />
             </div>
-            <span className="unit-row-count">
-              {done}/{unit.lessons.length}
-            </span>
           </Link>
         )
       })}
