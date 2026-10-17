@@ -101,3 +101,10 @@ export function sameAnswer(a: string, b: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
   return norm(a) === norm(b)
 }
+
+/** Lessons finished on a day. Falls back to lesson records for days saved before daily counts existed. */
+export function lessonsOn(day: string, byDay: Record<string, number>, progress: Record<string, { lastCompleted: string }>): number {
+  const recorded = byDay[day] ?? 0
+  const fromProgress = Object.values(progress).filter((p) => p.lastCompleted === day).length
+  return Math.max(recorded, fromProgress)
+}

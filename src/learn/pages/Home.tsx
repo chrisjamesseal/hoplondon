@@ -1,12 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
-import { courseProgress, dayKey, nextLesson } from '../lib/gamify'
+import { courseProgress, dayKey, lessonsOn, nextLesson } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
 import { Card, ProgressBar } from '../components'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { progress, xpByDay, dailyGoal } = useLearn()
+  const { progress, lessonsByDay, dailyLessons } = useLearn()
   const navigate = useNavigate()
 
   if (!course) {
@@ -24,7 +24,7 @@ export default function Home() {
 
   const cp = courseProgress(course, progress)
   const next = nextLesson(course, progress)
-  const todayXp = xpByDay[dayKey()] ?? 0
+  const today = lessonsOn(dayKey(), lessonsByDay, progress)
 
   return (
     <div className="home-page">
@@ -58,11 +58,11 @@ export default function Home() {
         <div className="row-between small">
           <span>🎯 Daily goal</span>
           <strong>
-            {Math.min(todayXp, dailyGoal)}/{dailyGoal} XP
+            {Math.min(today, dailyLessons)}/{dailyLessons} {dailyLessons === 1 ? 'lesson' : 'lessons'}
           </strong>
         </div>
-        <ProgressBar value={todayXp / dailyGoal} color="gold" height={12} label="Daily goal" />
-        {todayXp >= dailyGoal && <p className="tiny good">Goal smashed today 🎉</p>}
+        <ProgressBar value={today / dailyLessons} color="gold" height={12} label="Daily goal" />
+        {today >= dailyLessons && <p className="tiny good">Goal smashed today 🎉</p>}
       </Card>
 
       <h2 className="section-title">🗺️ Your units</h2>

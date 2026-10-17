@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bumpStreak, courseProgress, HEART_REGEN_MS, isUnlocked, levelInfo, liveStreak, regenHearts, sameAnswer } from './gamify'
+import { lessonsOn, bumpStreak, courseProgress, HEART_REGEN_MS, isUnlocked, levelInfo, liveStreak, regenHearts, sameAnswer } from './gamify'
 import { DEMO_COURSE } from '../demo'
 
 describe('streaks', () => {
@@ -52,5 +52,14 @@ describe('sameAnswer', () => {
   it('ignores case and punctuation', () => {
     expect(sameAnswer('Photosynthesis!', ' photosynthesis')).toBe(true)
     expect(sameAnswer('cat', 'cats')).toBe(false)
+  })
+})
+
+describe('lessonsOn', () => {
+  it('uses the daily count when there is one', () => {
+    expect(lessonsOn('2026-10-17', { '2026-10-17': 3 }, {})).toBe(3)
+  })
+  it('falls back to lesson records for older saves', () => {
+    expect(lessonsOn('2026-10-17', {}, { a: { lastCompleted: '2026-10-17' }, b: { lastCompleted: '2026-10-16' } })).toBe(1)
   })
 })

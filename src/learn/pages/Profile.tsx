@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { useLearn } from '../store'
-import { dayKey, levelInfo, liveStreak } from '../lib/gamify'
+import { dayKey, levelInfo, lessonsOn, liveStreak } from '../lib/gamify'
 import { Card, ProgressBar } from '../components'
 
 const GOALS = [
-  { xp: 10, label: 'Casual' },
-  { xp: 20, label: 'Regular' },
-  { xp: 30, label: 'Serious' },
-  { xp: 50, label: 'Intense' },
+  { n: 1, label: 'Casual' },
+  { n: 2, label: 'Regular' },
+  { n: 3, label: 'Serious' },
+  { n: 5, label: 'Intense' },
 ]
 
 export default function Profile() {
@@ -23,10 +23,10 @@ export default function Profile() {
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
-    return { day: d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2), xp: s.xpByDay[dayKey(d)] ?? 0, today: i === 6 }
+    return { day: d.toLocaleDateString('en-GB', { weekday: 'short' }).slice(0, 2), n: lessonsOn(dayKey(d), s.lessonsByDay, s.progress), today: i === 6 }
   })
-  const weekMax = Math.max(s.dailyGoal, ...week.map((w) => w.xp))
-  const weekTotal = week.reduce((a, w) => a + w.xp, 0)
+  const weekMax = Math.max(s.dailyLessons, ...week.map((w) => w.n))
+  const weekTotal = week.reduce((a, w) => a + w.n, 0)
 
   const badges = [
     { icon: '🐣', name: 'First steps', desc: 'Finish a lesson', have: done, need: 1 },
@@ -73,15 +73,15 @@ export default function Profile() {
       <Card>
         <div className="row-between">
           <h2>This week</h2>
-          <span className="muted small">{weekTotal} XP</span>
+          <span className="muted small">{weekTotal} {weekTotal === 1 ? 'lesson' : 'lessons'}</span>
         </div>
         <div className="week">
           {week.map((w, i) => (
             <div key={i} className="week-col">
-              <span className="week-val">{w.xp || ''}</span>
+              <span className="week-val">{w.n || ''}</span>
               <div className="week-track">
-                <div className={`week-bar ${w.xp >= s.dailyGoal ? 'hit' : ''}`} style={{ height: `${(w.xp / weekMax) * 100}%` }} />
-                <div className="week-goal" style={{ bottom: `${(s.dailyGoal / weekMax) * 100}%` }} />
+                <div className={`week-bar ${w.n >= s.dailyLessons ? 'hit' : ''}`} style={{ height: `${(w.n / weekMax) * 100}%` }} />
+                <div className="week-goal" style={{ bottom: `${(s.dailyLessons / weekMax) * 100}%` }} />
               </div>
               <span className={`week-day ${w.today ? 'today' : ''}`}>{w.day}</span>
             </div>
@@ -116,11 +116,12 @@ export default function Profile() {
 
       <Card>
         <h2>Daily goal</h2>
+        <p className="tiny muted">How many lessons do you want to finish each day?</p>
         <div className="goal-options">
           {GOALS.map((g) => (
-            <button key={g.xp} className={`goal-opt ${s.dailyGoal === g.xp ? 'active' : ''}`} onClick={() => s.setDailyGoal(g.xp)}>
+            <button key={g.n} className={`goal-opt ${s.dailyLessons === g.n ? 'active' : ''}`} onClick={() => s.setDailyLessons(g.n)}>
               <strong>{g.label}</strong>
-              <span>{g.xp} XP a day</span>
+              <span>{g.n} {g.n === 1 ? 'lesson' : 'lessons'} a day</span>
             </button>
           ))}
         </div>

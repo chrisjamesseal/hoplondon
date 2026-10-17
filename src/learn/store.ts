@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Course, LessonProgress } from './types'
 import { DEMO_COURSE } from './demo'
-import { bumpStreak, dayKey, MAX_HEARTS, regenHearts } from './lib/gamify'
+import { bumpStreak, dayKey, lessonsOn, MAX_HEARTS, regenHearts } from './lib/gamify'
 
 interface LearnState {
   courses: Course[]
@@ -10,11 +10,13 @@ interface LearnState {
   progress: Record<string, LessonProgress>
   xp: number
   xpByDay: Record<string, number>
+  lessonsByDay: Record<string, number>
   streak: number
   lastActiveDay: string | null
   hearts: number
   heartsUpdatedAt: number
   dailyGoal: number
+  dailyLessons: number
   sound: boolean
 
   addCourse: (c: Course) => void
@@ -26,6 +28,7 @@ interface LearnState {
   loseHeart: () => void
   refillHearts: () => void
   setDailyGoal: (n: number) => void
+  setDailyLessons: (n: number) => void
   setSound: (on: boolean) => void
   resetProgress: () => void
 }
@@ -38,11 +41,13 @@ export const useLearn = create<LearnState>()(
       progress: {},
       xp: 0,
       xpByDay: {},
+      lessonsByDay: {},
       streak: 0,
       lastActiveDay: null,
       hearts: MAX_HEARTS,
       heartsUpdatedAt: Date.now(),
       dailyGoal: 30,
+      dailyLessons: 2,
       sound: true,
 
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
@@ -73,6 +78,7 @@ export const useLearn = create<LearnState>()(
             },
             xp: s.xp + xp,
             xpByDay: { ...s.xpByDay, [today]: (s.xpByDay[today] ?? 0) + xp },
+            lessonsByDay: { ...s.lessonsByDay, [today]: lessonsOn(today, s.lessonsByDay, s.progress) + 1 },
             streak: bumpStreak(s.streak, s.lastActiveDay, today),
             lastActiveDay: today,
           }
@@ -102,8 +108,9 @@ export const useLearn = create<LearnState>()(
         }),
       refillHearts: () => set({ hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
+      setDailyLessons: (dailyLessons) => set({ dailyLessons }),
       setSound: (sound) => set({ sound }),
-      resetProgress: () => set({ progress: {}, xp: 0, xpByDay: {}, streak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
+      resetProgress: () => set({ progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
     }),
     {
       name: 'leap-v1',
