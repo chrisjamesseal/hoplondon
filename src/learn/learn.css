@@ -515,10 +515,8 @@ button:disabled { cursor: default; }
 .lang-flag { font-size: 28px; line-height: 1; }
 .backup-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
 
-/* ---------- centred exercises ---------- */
-.quiz { min-height: calc(100dvh - 400px); display: flex; flex-direction: column; justify-content: center; }
-.quiz .ex-title, .quiz .ex-prompt, .quiz .retry-tag, .quiz .cloze-sentence { text-align: center; }
-.quiz .choice { justify-content: center; text-align: center; position: relative; padding-left: 60px; padding-right: 60px; }
-.quiz .choice-key { position: absolute; left: 16px; }
-.quiz .tf-btn { padding-left: 16px; padding-right: 16px; }
-.quiz .match-item { text-align: center; justify-content: center; }
+.listen-btn { display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 64px; margin-bottom: 22px;
+  border: 2px solid var(--blue); background: var(--blue-soft); color: var(--blue); border-radius: 16px; box-shadow: 0 4px 0 var(--blue);
+  font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; }
+.listen-btn span { font-size: 28px; }
+.listen-btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--blue); }

@@ -29,11 +29,10 @@ export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<M
   const [lead, ...rest] = ex.prompt.split('\n\n')
   return (
     <div className="ex">
-      {ex.audio && (
-        <div className="listen">
-          <SpeakButton text={ex.audio} lang={lang} big />
-          <span className="muted small">Tap to listen</span>
-        </div>
+      {ex.audio && canSpeak() && (
+        <button type="button" className="listen-btn" onClick={() => speak(ex.audio!, lang)}>
+          <span aria-hidden>🔊</span> Tap to listen
+        </button>
       )}
       <h2 className="ex-title">{rest.length ? lead : 'Choose the right answer'}</h2>
       <p className="ex-prompt">{rest.length ? <Gap text={rest.join('\n\n')} /> : ex.prompt}</p>
