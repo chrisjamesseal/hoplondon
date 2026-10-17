@@ -9,6 +9,8 @@ function currentBuild(): string | null {
 }
 
 async function check() {
+  // Never reload mid lesson, or the lesson in progress would restart
+  if (/^#\/(lesson|practice)/.test(location.hash)) return
   const mine = currentBuild()
   if (!mine) return
   try {
@@ -23,6 +25,8 @@ async function check() {
 }
 
 export function startAutoUpdate() {
+  // Ask the browser not to clear Leap's saved progress when space runs low
+  navigator.storage?.persist?.().catch(() => {})
   if (import.meta.env.DEV) return
   check()
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && check())
