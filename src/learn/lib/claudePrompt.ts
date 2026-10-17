@@ -1,6 +1,6 @@
 /**
  * Builds a prompt the learner pastes into Claude. Claude replies with a
- * leap-course.json file, which the learner imports back into Leap.
+ * course JSON in the chat, which the learner pastes back into Leap.
  */
 
 export type PromptSource =
@@ -37,7 +37,7 @@ const FORMAT = `{
 const RULES = `Structure
 - 3 to 5 units that build from basics to harder ideas.
 - 2 to 4 lessons per unit, each on one small idea.
-- Each lesson has 2 or 3 "teach" cards (one or two short sentences each) that teach everything its exercises test, then 6 to 8 exercises.
+- Each lesson has 2 or 3 "teach" cards (one or two short sentences each) that teach everything its exercises test, then 6 or 7 exercises.
 
 Exercises (mix all four types in every lesson)
 - mcq: 3 or 4 short options; "answer" is the zero-based index of the correct option. Wrong options should be plausible.
@@ -73,11 +73,13 @@ ${sourceLine(src)}
 ${RULES}
 
 Output
-- Create a downloadable file called leap-course.json containing only valid JSON in exactly this format:
+- Reply in this chat with the JSON only, inside a single code block.
+- Write no other text before or after it. No greeting, no notes, no explanation.
+- Do not create a file.
+- Keep the JSON compact: no indentation and no blank lines.
+- Use exactly this format:
 
-${FORMAT}
-
-- If you can't create files, reply with the JSON alone in a single code block.`
+${FORMAT}`
 }
 
 /** Pulls the course JSON out of a file or pasted reply (tolerates code fences and extra text) */
@@ -87,11 +89,11 @@ export function parseCourseJson(text: string): unknown {
   const body = fenced ? fenced[1] : trimmed
   const start = body.indexOf('{')
   const end = body.lastIndexOf('}')
-  if (start < 0 || end <= start) throw new Error("That doesn't look like a Leap course. Paste the whole leap-course.json Claude made.")
+  if (start < 0 || end <= start) throw new Error("That doesn't look like a Leap course. Paste the whole reply Claude gave you.")
   try {
     return JSON.parse(body.slice(start, end + 1))
   } catch {
-    throw new Error("That JSON is incomplete or broken. Ask Claude to send the full leap-course.json again.")
+    throw new Error("That JSON is incomplete or broken. Ask Claude to send the full JSON again.")
   }
 }
 

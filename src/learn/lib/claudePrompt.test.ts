@@ -6,7 +6,7 @@ describe('buildPrompt', () => {
   it('includes the source and the file format', () => {
     const p = buildPrompt({ kind: 'topic', topic: 'Black holes' })
     expect(p).toContain('Black holes')
-    expect(p).toContain('leap-course.json')
+    expect(p).toContain('JSON only')
     expect(p).toContain('"exercises"')
   })
 

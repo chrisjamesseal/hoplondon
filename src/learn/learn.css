@@ -486,3 +486,7 @@ button:disabled { cursor: default; }
 .teach-label { margin-bottom: 8px; }
 .teach-art { margin-bottom: 18px; }
 .teach-card { width: 100%; text-align: center; }
+
+/* disabled buttons keep readable text whatever their colour variant */
+.btn.btn:disabled, .btn.btn.is-disabled { --c: var(--locked); --d: var(--locked-dark); color: var(--muted); }
+.btn.btn.ghost:disabled { --c: transparent; --d: var(--border); }

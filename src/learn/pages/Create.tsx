@@ -1,30 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLearn } from '../store'
-import { Card, ProgressBar } from '../components'
-import { linkToText, normaliseUrl, pdfToText, topicToText } from '../lib/extract'
-import { generateOffline } from '../lib/offlineGen'
+import { Card } from '../components'
+import { normaliseUrl } from '../lib/extract'
 import { normalizeCourse } from '../lib/normalize'
 import { buildPrompt, CLAUDE_URL, parseCourseJson, type PromptSource } from '../lib/claudePrompt'
 import type { SourceKind } from '../types'
 
 type Tab = 'pdf' | 'topic' | 'link'
-type Method = 'claude' | 'quick'
 
 const TABS: { id: Tab; icon: string; label: string; hint: string }[] = [
   { id: 'pdf', icon: '📄', label: 'Upload a PDF', hint: 'Notes, a textbook chapter, a report' },
   { id: 'topic', icon: '💭', label: 'Type a topic', hint: 'Anything you are curious about' },
   { id: 'link', icon: '🔗', label: 'Paste a link', hint: 'An article, blog post or wiki page' },
-]
-
-const IDEAS = ['Photosynthesis', 'The French Revolution', 'How vaccines work', 'Stoicism', 'Black holes', 'Wine tasting basics']
-
-const TIPS = [
-  'Short daily lessons beat long cramming sessions.',
-  'Getting things wrong helps you remember them. Mistakes come back at the end!',
-  'Keep your streak alive by finishing one lesson a day.',
-  'A crown 👑 means you aced a lesson with no mistakes.',
-  'Run out of hearts? Practice refills them.',
 ]
 
 /** "my_biology-notes.pdf" -> "My biology notes" */
@@ -45,27 +33,17 @@ async function copyText(text: string): Promise<boolean> {
 export default function Create() {
   const { addCourse } = useLearn()
   const navigate = useNavigate()
-  const [method, setMethod] = useState<Method>('claude')
   const [tab, setTab] = useState<Tab>('topic')
   const [file, setFile] = useState<File | null>(null)
   const [topic, setTopic] = useState('')
   const [link, setLink] = useState('')
   const [drag, setDrag] = useState(false)
-  const [busy, setBusy] = useState<{ step: string; progress: number } | null>(null)
   const [error, setError] = useState('')
-  const [tip, setTip] = useState(0)
   const [copied, setCopied] = useState<'ok' | 'manual' | null>(null)
   const [pasted, setPasted] = useState('')
   const [importError, setImportError] = useState('')
   const pdfRef = useRef<HTMLInputElement>(null)
-  const jsonRef = useRef<HTMLInputElement>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
-
-  useEffect(() => {
-    if (!busy) return
-    const t = setInterval(() => setTip((n) => (n + 1) % TIPS.length), 4000)
-    return () => clearInterval(t)
-  }, [busy])
 
   useEffect(() => setCopied(null), [tab, topic, link, file])
 
@@ -105,52 +83,23 @@ export default function Create() {
     if (!ok) setTimeout(() => promptRef.current?.select(), 50)
   }
 
-  function importCourse(text: string) {
+  function importCourse(text: string, quiet = false) {
     setImportError('')
     try {
       const course = normalizeCourse(parseCourseJson(text), sourceLabel(), 'claude')
       addCourse(course)
       navigate('/')
     } catch (e) {
-      setImportError(e instanceof Error ? e.message : "Couldn't read that course file.")
+      if (!quiet) setImportError(e instanceof Error ? e.message : "Couldn't read that course file.")
     }
   }
 
-  async function buildQuick() {
-    setError('')
+  async function pasteFromClipboard() {
     try {
-      setBusy({ step: 'Reading your source…', progress: 0.1 })
-      let title: string
-      let text: string
-      if (tab === 'pdf') {
-        title = titleFromFile(file!.name)
-        text = await pdfToText(file!)
-      } else if (tab === 'topic') {
-        ;({ title, text } = await topicToText(topic.trim()))
-      } else {
-        ;({ title, text } = await linkToText(link))
-      }
-      setBusy({ step: 'Building lessons…', progress: 0.6 })
-      await new Promise((r) => setTimeout(r, 400))
-      const course = normalizeCourse(generateOffline(title, text), { kind: tab, label: title }, 'offline')
-      addCourse(course)
-      navigate('/')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.')
-      setBusy(null)
+      importCourse(await navigator.clipboard.readText())
+    } catch {
+      setImportError('Tap the box below and paste it there.')
     }
-  }
-
-  if (busy) {
-    return (
-      <Card className="building">
-        <div className="building-mascot">🐸</div>
-        <h2>{busy.step}</h2>
-        <ProgressBar value={busy.progress} label="Building course" />
-        <p className="muted small">{Math.round(busy.progress * 100)}%</p>
-        <div className="tip">💡 {TIPS[tip]}</div>
-      </Card>
-    )
   }
 
   const prompt = promptReady ? (() => { try { return buildPrompt(promptSource()) } catch { return '' } })() : ''
@@ -158,7 +107,7 @@ export default function Create() {
   return (
     <div className="create">
       <h1>Learn anything</h1>
-      <p className="muted">Pick what to learn, then choose how Leap makes the lessons.</p>
+      <p className="muted">Pick what to learn and Claude builds the lessons.</p>
 
       <div className="tabs">
         {TABS.map((t) => (
@@ -220,13 +169,6 @@ export default function Create() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
             />
-            <div className="chips">
-              {IDEAS.map((i) => (
-                <button key={i} className="chip" onClick={() => setTopic(i)}>
-                  {i}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 
@@ -244,28 +186,9 @@ export default function Create() {
           </div>
         )}
 
-        <div className="method" role="radiogroup" aria-label="How to make lessons">
-          <button role="radio" aria-checked={method === 'claude'} className={`method-opt ${method === 'claude' ? 'active' : ''}`} onClick={() => setMethod('claude')}>
-            <strong>✨ With Claude</strong>
-            <span>Best lessons. Takes a minute in the Claude app.</span>
-          </button>
-          <button role="radio" aria-checked={method === 'quick'} className={`method-opt ${method === 'quick' ? 'active' : ''}`} onClick={() => setMethod('quick')}>
-            <strong>⚡ Quick</strong>
-            <span>Instant, simpler quizzes built from the text.</span>
-          </button>
-        </div>
-
         {error && <div className="error">😬 {error}</div>}
 
-        {method === 'quick' ? (
-          <>
-            {tab === 'topic' && <p className="tiny muted">Quick mode uses the matching Wikipedia article.</p>}
-            <button className="btn green wide" disabled={!ready} onClick={buildQuick}>
-              Make my course
-            </button>
-          </>
-        ) : (
-          <ol className="steps">
+        <ol className="steps">
             <li className="step">
               <span className="step-num">1</span>
               <div className="grow">
@@ -299,31 +222,19 @@ export default function Create() {
             <li className="step">
               <span className="step-num">2</span>
               <div className="grow">
-                <strong>Claude makes leap-course.json</strong>
-                <p className="tiny muted">Download the file, or copy the JSON Claude replies with.</p>
+                <strong>Claude replies with the course</strong>
+                <p className="tiny muted">Tap the copy button on Claude's reply.</p>
               </div>
             </li>
             <li className="step">
               <span className="step-num">3</span>
               <div className="grow">
                 <strong>Bring it back here</strong>
-                <input
-                  ref={jsonRef}
-                  id="json-file"
-                  type="file"
-                  accept="application/json,.json,text/plain"
-                  hidden
-                  onChange={async (e) => {
-                    const f = e.target.files?.[0]
-                    e.target.value = ''
-                    if (f) importCourse(await f.text())
-                  }}
-                />
-                <button className="btn green wide" onClick={() => jsonRef.current?.click()}>
-                  Upload course file
+                <button className="btn green wide" onClick={pasteFromClipboard}>
+                  Paste and import
                 </button>
                 <label htmlFor="json-paste" className="tiny muted or-label">
-                  or paste it
+                  or paste it here
                 </label>
                 <textarea
                   id="json-paste"
@@ -331,6 +242,7 @@ export default function Create() {
                   placeholder='{"title": "…", "units": […]}'
                   rows={3}
                   value={pasted}
+                  onPaste={(e) => importCourse(e.clipboardData.getData('text'), true)}
                   onChange={(e) => (setPasted(e.target.value), setImportError(''))}
                 />
                 {importError && <div className="error">😬 {importError}</div>}
@@ -341,8 +253,7 @@ export default function Create() {
                 )}
               </div>
             </li>
-          </ol>
-        )}
+        </ol>
       </Card>
     </div>
   )
