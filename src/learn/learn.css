@@ -177,7 +177,9 @@ button:disabled { cursor: default; }
 
 /* ---------- cards ---------- */
 .card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
-.empty { text-align: center; padding: 40px 20px; }
+.empty { text-align: center; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.empty p { max-width: 32ch; margin-bottom: 16px; }
+.empty h2 { text-wrap: balance; }
 
 /* ---------- path ---------- */
 .course-card-top { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
@@ -267,6 +269,7 @@ button:disabled { cursor: default; }
 
 /* ---------- courses ---------- */
 .course-list { margin-top: 16px; }
+.courses > .row-between { margin-bottom: 16px; }
 .course-row { display: flex; align-items: center; gap: 8px; padding: 14px; flex-wrap: wrap; }
 .course-row.active { border-color: var(--green); }
 .course-row-main { display: flex; gap: 14px; align-items: center; flex: 1; min-width: 0; background: none; border: 0; text-align: left; padding: 0; }
