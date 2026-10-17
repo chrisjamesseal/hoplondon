@@ -648,3 +648,12 @@ button:disabled { cursor: default; }
 .video-steps { margin: 0 0 12px; padding-left: 20px; line-height: 1.5; }
 .video-box label { display: block; font-weight: 900; margin-bottom: 6px; }
 .video-box .json-paste { margin: 0 0 6px; }
+
+/* bottom bar: the highlight hugs the emoji, while the whole tab stays tappable */
+@media (max-width: 860px) {
+  .side-link { flex: 1; justify-content: center; padding: 6px 0; border: 0; background: none; }
+  .side-link:hover { background: none; }
+  .side-link.active { background: none; }
+  .side-icon { display: grid; place-items: center; width: 44px; height: 36px; font-size: 24px; line-height: 1; border: 2px solid transparent; border-radius: 12px; }
+  .side-link.active .side-icon { background: var(--blue-soft); border-color: var(--blue); }
+}
