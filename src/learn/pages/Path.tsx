@@ -69,7 +69,7 @@ export default function Path() {
                   <p>{plainText(unit.description)}</p>
                 </div>
               </div>
-              {stepsDone > 0 && (
+              {done > 0 && (
                 <div className="unit-progress">
                   <ProgressBar value={stepsDone / steps} color="gold" height={10} label={`${unit.title} progress`} />
                   <span>

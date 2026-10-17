@@ -577,7 +577,7 @@ button:disabled { cursor: default; }
 .unit-progress .pbar { flex: 1; }
 .unit-progress span { font-weight: 900; min-width: 34px; text-align: right; }
 .jump-btn {
-  align-self: stretch; width: 100%; text-align: center; border: 2px solid rgba(255,255,255,0.7); background: rgba(0,0,0,0.12); color: #fff; border-radius: 12px;
+  display: block; box-sizing: border-box; align-self: stretch; width: 100%; text-align: center; border: 2px solid rgba(255,255,255,0.7); background: rgba(0,0,0,0.12); color: #fff; border-radius: 12px;
   padding: 10px 12px; font-weight: 900; font-size: 14px; letter-spacing: 0.3px;
 }
 .jump-btn:active { transform: translateY(2px); }
