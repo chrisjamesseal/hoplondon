@@ -41,7 +41,10 @@ export default function Path() {
   return (
     <div className="path-page">
       <h1 className="path-title">
-        {course.emoji} {titleCase(course.title)}
+        <span className="path-title-emoji" aria-hidden>
+          {course.emoji}
+        </span>
+        {titleCase(course.title)}
       </h1>
 
       {course.units.map((unit, ui) => {
