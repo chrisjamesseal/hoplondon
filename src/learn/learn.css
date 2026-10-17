@@ -610,3 +610,6 @@ button:disabled { cursor: default; }
 
 /* path unit banners: emoji level with the unit title */
 .unit-banner-top { align-items: flex-start; }
+
+/* home course card: emoji sits above the title so the text gets the full width */
+.home-page .course-card-top { flex-direction: column; gap: 10px; }
