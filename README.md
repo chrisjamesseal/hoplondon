@@ -1,5 +1,7 @@
 # hop — budgeting & UK freelance tax
 
+> This repo also hosts **leap**, a Duolingo-style app for learning anything. See [Leap](#leap--learn-anything) below.
+
 A local-first web app that helps you save money: a "fancy spreadsheet" for everyday
 budgeting, plus tooling for the awkward freelance bits — tracking what counts as an
 HMRC tax write-off and estimating your Self Assessment bill so January is boring.
@@ -63,3 +65,40 @@ realistic example data.
 Vite + React + TypeScript · Zustand (localStorage persistence) · Recharts · PapaParse.
 Money is stored as integer pence; the UK tax year (6 April–5 April) is handled in
 `src/lib/dates.ts`.
+
+---
+
+## Leap · learn anything
+
+A Duolingo-style learning app that lives in the same repo and build, at
+**https://chrisjamesseal.github.io/hoplondon/learn/**
+
+Give it a source and it builds a course of units and lessons:
+
+- **Upload a PDF** (notes, a textbook chapter, a report)
+- **Type a topic** ("How vaccines work")
+- **Paste a link** (an article or wiki page)
+
+### Gamification
+
+- Winding lesson path, units unlock in order, crowns 👑 for perfect lessons
+- Progress bars everywhere: course, unit, lesson, daily goal, level, achievements
+- XP, levels, daily streak 🔥, daily XP goal and a weekly XP chart
+- Hearts ❤️: lose one per mistake, regain one every 30 minutes, or practise to refill
+- Mistakes come back at the end of the lesson until you get them right
+- Exercise types: multiple choice, true/false, fill the gap with word tiles, match pairs
+- Sounds, confetti, keyboard shortcuts (1 to 4 to pick, Enter to check)
+
+### How lessons are made
+
+- **Claude mode** (add an Anthropic API key on the Profile page): Claude reads the PDF,
+  topic or page and writes the course as structured JSON. Links Claude can't get via the
+  browser are fetched with Claude's web fetch tool. Code: `src/learn/lib/claudeGen.ts`.
+- **Basic mode** (no key): text is pulled out in the browser (pdf.js for PDFs, the
+  Wikipedia API for topics, a reader proxy for links) and turned into exercises from key
+  terms and sentences. Code: `src/learn/lib/offlineGen.ts`.
+
+Everything (courses, progress, key) is stored in your browser only. The key is sent only
+to Anthropic.
+
+Code lives in `src/learn/`; the entry page is `learn/index.html`.
