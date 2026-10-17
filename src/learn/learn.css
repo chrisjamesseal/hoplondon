@@ -617,3 +617,6 @@ button:disabled { cursor: default; }
 /* home unit list: lesson count sits at the end of the title line, in the title colour */
 .unit-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .unit-row-head .unit-row-count { color: var(--text); font-weight: 900; flex-shrink: 0; }
+
+/* delete lives at the bottom of the course page, quieter than the main actions */
+.home-page .delete-course { margin-top: 12px; }

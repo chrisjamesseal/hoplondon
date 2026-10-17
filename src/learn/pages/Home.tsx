@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, flatLessons, lessonsOn, nextStep } from '../lib/gamify'
@@ -8,7 +9,8 @@ import { titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { progress, lessonsByDay, dailyLessons, archived, archiveCourse } = useLearn()
+  const { progress, lessonsByDay, dailyLessons, archived, archiveCourse, deleteCourse } = useLearn()
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const navigate = useNavigate()
 
   if (!course) {
@@ -109,6 +111,32 @@ export default function Home() {
       <Link to="/path" className="btn blue wide">
         🗺️ Open Lesson Path
       </Link>
+      <button className="btn ghost wide danger-text delete-course" onClick={() => setConfirmDelete(true)}>
+        🗑 Delete Course
+      </button>
+
+      {confirmDelete && (
+        <div className="modal-bg" onClick={() => setConfirmDelete(false)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="del-title" onClick={(e) => e.stopPropagation()}>
+            <div className="big-emoji">{course.emoji}</div>
+            <h2 id="del-title">Delete This Course?</h2>
+            <p className="muted">{titleCase(course.title)} and all its progress will be removed. This can't be undone.</p>
+            <button
+              className="btn red wide"
+              onClick={() => {
+                deleteCourse(course.id)
+                setConfirmDelete(false)
+                navigate('/courses')
+              }}
+            >
+              Delete Course
+            </button>
+            <button className="btn ghost wide" autoFocus onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
