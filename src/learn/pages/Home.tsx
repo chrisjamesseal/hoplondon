@@ -45,7 +45,7 @@ export default function Home() {
         <ProgressBar value={cp.ratio} label="Course progress" />
         {next ? (
           <button className="btn green wide" onClick={() => navigate(`/lesson/${next.id}`)}>
-            🚀 {cp.done ? 'Continue' : 'Start learning'}: {next.title}
+            🚀 {next.title}
           </button>
         ) : (
           <button className="btn gold wide" onClick={() => navigate('/practice')}>
