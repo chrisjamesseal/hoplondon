@@ -33,7 +33,6 @@ export default function Courses() {
             <div className="row-between">
               <strong>{c.title}</strong>
               {active && <span className="pill">Learning</span>}
-              {inArchive && <span className="pill muted-pill">Archived</span>}
             </div>
             <div className="tiny muted">
               {SOURCE_ICON[c.source.kind]} {c.source.label} · {c.units.length} units · {cp.total} lessons
