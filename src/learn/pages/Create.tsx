@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useLearn } from '../store'
 import { Card } from '../components'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from '../lib/phrasebook'
-import { normaliseUrl } from '../lib/extract'
+import { cleanTranscript, isYouTubeUrl, MAX_TRANSCRIPT_CHARS, normaliseUrl } from '../lib/extract'
 import { normalizeCourse } from '../lib/normalize'
 import { buildPrompt, CLAUDE_URL, parseCourseJson, type PromptSource } from '../lib/claudePrompt'
 import type { SourceKind } from '../types'
@@ -16,6 +16,9 @@ const TABS: { id: Tab; icon: string; label: string; hint: string }[] = [
   { id: 'link', icon: '🔗', label: 'Paste a Link', hint: 'An article, blog post or wiki page' },
   { id: 'language', icon: '🗣️', label: 'Travel Phrases', hint: 'Hello, thanks, directions and more' },
 ]
+
+/** Prompts longer than this are too big to carry in a web address, so Claude opens empty and the copied prompt is pasted in */
+const MAX_LINK_PROMPT = 6000
 
 /** "my_biology-notes.pdf" -> "My biology notes" */
 function titleFromFile(name: string): string {
@@ -39,6 +42,7 @@ export default function Create() {
   const [file, setFile] = useState<File | null>(null)
   const [topic, setTopic] = useState('')
   const [link, setLink] = useState('')
+  const [transcript, setTranscript] = useState('')
   const [langId, setLangId] = useState('')
   const [drag, setDrag] = useState(false)
   const [error, setError] = useState('')
@@ -48,20 +52,27 @@ export default function Create() {
   const pdfRef = useRef<HTMLInputElement>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => setCopied(null), [tab, topic, link, file, langId])
+  useEffect(() => setCopied(null), [tab, topic, link, file, langId, transcript])
 
-  const ready = tab === 'pdf' ? !!file : tab === 'topic' ? topic.trim().length > 1 : tab === 'language' ? !!langId : link.trim().length > 3
+  const isVideo = tab === 'link' && isYouTubeUrl(link)
+  const cleaned = cleanTranscript(transcript)
+  const words = cleaned ? cleaned.split(' ').length : 0
+  const tooLong = cleaned.length > MAX_TRANSCRIPT_CHARS
+  // Claude can't watch a video, so a YouTube link needs its transcript before the prompt is worth sending
+  const videoReady = isVideo && words >= 30 && !tooLong
+  const ready = tab === 'pdf' ? !!file : tab === 'topic' ? topic.trim().length > 1 : tab === 'language' ? !!langId : isVideo ? videoReady : link.trim().length > 3
   // A PDF is attached in Claude itself, so the prompt doesn't need the file chosen here
   const promptReady = tab === 'pdf' || ready
 
   function promptSource(): PromptSource {
     if (tab === 'topic') return { kind: 'topic', topic: topic.trim() }
-    if (tab === 'link') return { kind: 'link', url: normaliseUrl(link) }
+    if (tab === 'link') return { kind: 'link', url: normaliseUrl(link), transcript: isVideo ? cleaned : undefined }
     return { kind: 'pdf', fileName: file?.name }
   }
 
   function sourceLabel(): { kind: SourceKind; label: string } {
     if (tab === 'topic' && topic.trim()) return { kind: 'topic', label: topic.trim() }
+    if (isVideo) return { kind: 'link', label: 'YouTube Video' }
     if (tab === 'link' && link.trim()) {
       try {
         return { kind: 'link', label: new URL(normaliseUrl(link)).hostname }
@@ -211,6 +222,30 @@ export default function Create() {
               value={link}
               onChange={(e) => setLink(e.target.value)}
             />
+            {isVideo && (
+              <div className="video-box">
+                <p className="video-note">
+                  ▶️ <strong>YouTube Video</strong>. Claude can't watch videos, so it needs the transcript to teach what's actually said.
+                </p>
+                <ol className="video-steps tiny muted">
+                  <li>Open the video and expand the description.</li>
+                  <li>Tap Show Transcript.</li>
+                  <li>Select the text, copy it and paste it below.</li>
+                </ol>
+                <label htmlFor="transcript">Transcript</label>
+                <textarea
+                  id="transcript"
+                  className="input json-paste"
+                  rows={4}
+                  placeholder="Paste the transcript here"
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                />
+                {words > 0 && !tooLong && <p className="tiny muted">{words.toLocaleString()} words{words < 30 ? ' (paste a bit more)' : ''}</p>}
+                {tooLong && <p className="tiny danger-text">That's very long. Paste a section of up to about {Math.round(MAX_TRANSCRIPT_CHARS / 6000) * 1000} words and make a course from each part.</p>}
+                <p className="tiny muted">No transcript? Use the Topic tab and type what the video is about.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -231,7 +266,7 @@ export default function Create() {
                   {/* A real link so phones don't block the new tab; Claude opens with the prompt filled in */}
                   <a
                     className={`btn blue ${prompt ? '' : 'is-disabled'}`}
-                    href={prompt ? `${CLAUDE_URL}?q=${encodeURIComponent(prompt)}` : undefined}
+                    href={prompt ? (prompt.length > MAX_LINK_PROMPT ? CLAUDE_URL : `${CLAUDE_URL}?q=${encodeURIComponent(prompt)}`) : undefined}
                     target="_blank"
                     rel="noreferrer"
                     aria-disabled={!prompt}
@@ -243,6 +278,9 @@ export default function Create() {
                     {copied === 'ok' ? '✓ Copied' : 'Copy prompt'}
                   </button>
                 </div>
+                {prompt.length > MAX_LINK_PROMPT && copied !== 'manual' && (
+                  <p className="tiny muted">This prompt is long, so Claude opens empty. Tapping Open in Claude copies it first: just paste it in.</p>
+                )}
                 {copied === 'manual' && <p className="tiny muted">Couldn't copy automatically. Select the prompt below and copy it.</p>}
                 {prompt && (
                   <details className="prompt-box" open={copied === 'manual'}>

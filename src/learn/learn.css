@@ -634,3 +634,17 @@ button:disabled { cursor: default; }
 /* path: course emoji centred on its own line with the title centred underneath */
 .path-title { display: flex; flex-direction: column; align-items: center; gap: 6px; text-wrap: balance; }
 .path-title-emoji { font-size: 56px; line-height: 1; }
+
+/* centred text breaks into evenly sized lines instead of leaving one word on its own */
+.path-title, .teach-card, .phrase-meaning, .done-inner h1, .done-inner p, .modal h2, .modal p,
+.empty h2, .empty p, .building h2, .tip, .node-label, .unit-banner h2, .feedback p, .feedback strong {
+  text-wrap: balance;
+}
+.teach-card { text-wrap: balance; }
+
+/* YouTube link: transcript box */
+.video-box { margin-top: 14px; padding: 14px; border-radius: 14px; background: var(--surface-2); border: 2px solid var(--border); }
+.video-note { margin: 0 0 8px; font-size: 15px; }
+.video-steps { margin: 0 0 12px; padding-left: 20px; line-height: 1.5; }
+.video-box label { display: block; font-weight: 900; margin-bottom: 6px; }
+.video-box .json-paste { margin: 0 0 6px; }

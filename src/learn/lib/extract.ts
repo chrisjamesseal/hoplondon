@@ -97,3 +97,30 @@ export async function linkToText(rawUrl: string): Promise<{ title: string; text:
 
   throw new Error("Couldn't read that page. It may be private or block apps from reading it. Try switching to With Claude, which can read most pages.")
 }
+
+/** youtube.com, youtu.be and their mobile and music hosts */
+export function isYouTubeUrl(input: string): boolean {
+  try {
+    const host = new URL(/^https?:\/\//i.test(input.trim()) ? input.trim() : `https://${input.trim()}`).hostname.replace(/^(www|m|music)\./, '')
+    return host === 'youtube.com' || host === 'youtu.be'
+  } catch {
+    return false
+  }
+}
+
+/** Longest transcript Leap will put in a prompt (about an hour and a half of talking) */
+export const MAX_TRANSCRIPT_CHARS = 120_000
+
+/**
+ * YouTube's "Show transcript" copies as timestamp lines mixed with text.
+ * Drops the timestamps and joins the rest into one flowing block.
+ */
+export function cleanTranscript(raw: string): string {
+  return raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l && !/^\d{1,2}(:\d{2}){1,2}$/.test(l) && !/^\[?(music|applause|laughter)\]?$/i.test(l))
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}

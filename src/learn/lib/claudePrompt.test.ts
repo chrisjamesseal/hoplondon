@@ -20,6 +20,12 @@ describe('buildPrompt', () => {
     expect(p).toMatch(/never as children/)
   })
 
+  it('puts a pasted video transcript in the prompt', () => {
+    const p = buildPrompt({ kind: 'link', url: 'https://youtu.be/abc', transcript: 'Today we talk about bees and honey.' })
+    expect(p).toContain('<transcript>\nToday we talk about bees and honey.\n</transcript>')
+    expect(p).toContain('Stick to what is said')
+  })
+
   it('has no long dashes', () => {
     expect(buildPrompt({ kind: 'link', url: 'https://x.y' })).not.toMatch(/[—–]/)
   })
