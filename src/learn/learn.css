@@ -341,7 +341,7 @@ button:disabled { cursor: default; }
 .dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--locked); }
 .dots span.on { background: var(--purple); }
 .retry-tag { color: var(--orange); font-size: 14px; font-weight: 900; text-transform: uppercase; margin-bottom: 8px; }
-.ex-title { font-size: 24px; margin-bottom: 14px; }
+.ex-title { font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
 .ex-prompt { font-size: 19px; margin-bottom: 22px; white-space: pre-line; }
 .ex-prompt.statement { padding: 18px; border: 2px solid var(--border); border-radius: 16px; background: var(--surface-2); }
 .choices { display: grid; gap: 12px; }
@@ -397,7 +397,6 @@ button:disabled { cursor: default; }
   .check-inner > span:empty { display: none; }
   .check-inner .btn { width: 100%; }
   .feedback-icon { display: none; }
-  .ex-title { font-size: 21px; }
   .teach-card { font-size: 20px; }
 }
 

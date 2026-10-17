@@ -438,8 +438,6 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   }
 
   const card = session.cards[teachIdx]
-  // A resumed lesson keeps counting from where it stopped
-  const qNum = idx + 1 + (resume?.solved ?? 0)
   return (
     <GlossContext.Provider value={gloss}>
       <div className="lesson">
@@ -496,11 +494,11 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
           )}
           {phase === 'quiz' && item && (
             <div key={`${idx}-${item.key}`} className="pop">
-              <div className="q-num">
-                {/* Repeats of earlier mistakes come after the last numbered question */}
-                {qNum <= total ? `Question ${qNum} of ${total}` : 'Review'}
-                {missed.has(item.key) && !result && !tested && <span className="retry-tag"> · ↻ Previous mistake</span>}
-              </div>
+              {missed.has(item.key) && !result && !tested && (
+                <div className="q-num">
+                  <span className="retry-tag">↻ Previous mistake</span>
+                </div>
+              )}
               {item.ex.type === 'mcq' && (
                 <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />
               )}
