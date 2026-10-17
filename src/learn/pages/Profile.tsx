@@ -51,9 +51,9 @@ export default function Profile() {
   const weekTotal = week.reduce((a, w) => a + w.n, 0)
 
   const badges = [
-    { icon: '🐣', name: 'First steps', desc: 'Finish a lesson', have: done, need: 1 },
-    { icon: '🔥', name: 'On fire', desc: 'Reach a 3 day streak', have: streak, need: 3 },
-    { icon: '📅', name: 'Week warrior', desc: 'Reach a 7 day streak', have: streak, need: 7 },
+    { icon: '🐣', name: 'First Steps', desc: 'Finish a lesson', have: done, need: 1 },
+    { icon: '🔥', name: 'On Fire', desc: 'Reach a 3 day streak', have: streak, need: 3 },
+    { icon: '📅', name: 'Week Warrior', desc: 'Reach a 7 day streak', have: streak, need: 7 },
     { icon: '👑', name: 'Perfectionist', desc: 'Ace 5 lessons with no mistakes', have: crowns, need: 5 },
     { icon: '🧠', name: 'Scholar', desc: 'Earn 500 XP', have: s.xp, need: 500 },
     { icon: '🛠', name: 'Creator', desc: 'Make your own course', have: made, need: 1 },
@@ -94,7 +94,7 @@ export default function Profile() {
 
       <Card>
         <div className="row-between">
-          <h2>This week</h2>
+          <h2>This Week</h2>
           <span className="muted small">{weekTotal} {weekTotal === 1 ? 'lesson' : 'lessons'}</span>
         </div>
         <div className="week">
@@ -137,7 +137,7 @@ export default function Profile() {
       </Card>
 
       <Card>
-        <h2>Daily goal</h2>
+        <h2>Daily Goal</h2>
         <p className="tiny muted">How many lessons do you want to finish each day?</p>
         <div className="goal-options">
           {GOALS.map((g) => (

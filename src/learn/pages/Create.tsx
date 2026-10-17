@@ -12,9 +12,9 @@ type Tab = 'pdf' | 'topic' | 'link' | 'language'
 
 const TABS: { id: Tab; icon: string; label: string; hint: string }[] = [
   { id: 'pdf', icon: '📄', label: 'Upload a PDF', hint: 'Notes, a textbook chapter, a report' },
-  { id: 'topic', icon: '💭', label: 'Type a topic', hint: 'Anything you are curious about' },
-  { id: 'link', icon: '🔗', label: 'Paste a link', hint: 'An article, blog post or wiki page' },
-  { id: 'language', icon: '🗣️', label: 'Travel phrases', hint: 'Hello, thanks, directions and more' },
+  { id: 'topic', icon: '💭', label: 'Type a Topic', hint: 'Anything you are curious about' },
+  { id: 'link', icon: '🔗', label: 'Paste a Link', hint: 'An article, blog post or wiki page' },
+  { id: 'language', icon: '🗣️', label: 'Travel Phrases', hint: 'Hello, thanks, directions and more' },
 ]
 
 /** "my_biology-notes.pdf" -> "My biology notes" */
@@ -119,7 +119,7 @@ export default function Create() {
 
   return (
     <div className="create">
-      <h1>Learn anything</h1>
+      <h1>Learn Anything</h1>
       <p className="muted">Pick what to learn. Claude builds the lessons, or grab a ready made phrase course.</p>
 
       <div className="tabs">
@@ -165,7 +165,7 @@ export default function Create() {
               </>
             ) : (
               <>
-                <strong>Drop a PDF here</strong>
+                <strong>Drop a PDF Here</strong>
                 <span className="muted small">or tap to choose one</span>
               </>
             )}
@@ -225,7 +225,7 @@ export default function Create() {
             <li className="step">
               <span className="step-num">1</span>
               <div className="grow">
-                <strong>Copy the prompt into Claude</strong>
+                <strong>Copy the Prompt into Claude</strong>
                 {tab === 'pdf' && <p className="tiny muted">Attach your PDF in Claude too.</p>}
                 <div className="step-actions">
                   {/* A real link so phones don't block the new tab; Claude opens with the prompt filled in */}
@@ -255,14 +255,14 @@ export default function Create() {
             <li className="step">
               <span className="step-num">2</span>
               <div className="grow">
-                <strong>Claude replies with the course</strong>
+                <strong>Claude Replies with the Course</strong>
                 <p className="tiny muted">Tap the copy button on Claude's reply.</p>
               </div>
             </li>
             <li className="step">
               <span className="step-num">3</span>
               <div className="grow">
-                <strong>Bring it back here</strong>
+                <strong>Bring It Back Here</strong>
                 <button className="btn green wide" onClick={pasteFromClipboard}>
                   Paste and import
                 </button>
