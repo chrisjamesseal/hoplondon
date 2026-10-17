@@ -490,3 +490,8 @@ button:disabled { cursor: default; }
 /* disabled buttons keep readable text whatever their colour variant */
 .btn.btn:disabled, .btn.btn.is-disabled { --c: var(--locked); --d: var(--locked-dark); color: var(--muted); }
 .btn.btn.ghost:disabled { --c: transparent; --d: var(--border); }
+
+/* label stays at the top, picture and card centre in the space below */
+.teach { justify-content: flex-start; }
+.teach-label { align-self: stretch; margin-bottom: 0; }
+.teach-body { flex: 1; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }

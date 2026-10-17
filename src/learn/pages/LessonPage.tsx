@@ -250,16 +250,18 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
         {phase === 'teach' && (
           <div className="teach">
             <div className="teach-label">💡 Learn · {session.title}</div>
-            <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
-              {session.emoji}
-            </div>
-            <div key={teachIdx} className="teach-card pop">
-              {session.teach[teachIdx]}
-            </div>
-            <div className="dots">
-              {session.teach.map((_, i) => (
-                <span key={i} className={i <= teachIdx ? 'on' : ''} />
-              ))}
+            <div className="teach-body">
+              <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
+                {session.emoji}
+              </div>
+              <div key={teachIdx} className="teach-card pop">
+                {session.teach[teachIdx]}
+              </div>
+              <div className="dots">
+                {session.teach.map((_, i) => (
+                  <span key={i} className={i <= teachIdx ? 'on' : ''} />
+                ))}
+              </div>
             </div>
           </div>
         )}
