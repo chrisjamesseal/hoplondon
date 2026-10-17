@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
-import type { Course, Exercise, Lesson } from '../types'
+import type { Course, Exercise, Lesson, Phrase } from '../types'
+
+interface TeachCard {
+  text?: string
+  phrase?: Phrase
+}
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, flatLessons, lessonXp, liveStreak, MAX_HEARTS, nextHeartIn, shuffle } from '../lib/gamify'
 import { play } from '../lib/sound'
 import { Confetti, ProgressBar } from '../components'
 import { pickEmoji } from '../lib/emoji'
-import { Cloze, clozeTiles, Match, Mcq, TrueFalse } from './Exercises'
+import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse } from './Exercises'
 
 interface Item {
   key: string
@@ -49,22 +54,23 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
   const store = useLearn()
   const activeCourse = useActiveCourse()
   const found = practice ? null : findLesson(store.courses, lessonId)
+  const langCode = (found?.course ?? activeCourse)?.lang
 
   // Practice pulls a mix from lessons already done in the current course
   const session = useMemo(() => {
-    if (!practice) return found ? { title: found.lesson.title, emoji: pickEmoji(found.lesson.emoji, found.lesson.title), teach: found.lesson.teach, exercises: found.lesson.exercises } : null
+    if (!practice) return found ? { title: found.lesson.title, emoji: pickEmoji(found.lesson.emoji, found.lesson.title), cards: [...found.lesson.teach.map((text): TeachCard => ({ text })), ...(found.lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))], exercises: found.lesson.exercises } : null
     if (!activeCourse) return null
     const lessons = flatLessons(activeCourse)
     const done = lessons.filter((l) => store.progress[l.id]?.completions)
     const pool = (done.length ? done : lessons.slice(0, 1)).flatMap((l) => l.exercises)
-    return { title: 'Practice', emoji: '💪', teach: [], exercises: shuffle(pool).slice(0, 8) }
+    return { title: 'Practice', emoji: '💪', cards: [] as TeachCard[], exercises: shuffle(pool).slice(0, 8) }
     // Build the session once per visit, not on every store change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [practice, lessonId])
 
   const [queue, setQueue] = useState<Item[]>(() => toItems(session?.exercises ?? []))
   const total = session?.exercises.length ?? 0
-  const [phase, setPhase] = useState<Phase>(() => (!practice && store.hearts <= 0 ? 'out' : session?.teach.length ? 'teach' : 'quiz'))
+  const [phase, setPhase] = useState<Phase>(() => (!practice && store.hearts <= 0 ? 'out' : session?.cards.length ? 'teach' : 'quiz'))
   const [teachIdx, setTeachIdx] = useState(0)
   const [idx, setIdx] = useState(0)
   const [choice, setChoice] = useState<number | null>(null)
@@ -136,7 +142,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (phase === 'teach' && e.key === 'Enter') {
-        if (teachIdx + 1 < (session?.teach.length ?? 0)) setTeachIdx(teachIdx + 1)
+        if (teachIdx + 1 < (session?.cards.length ?? 0)) setTeachIdx(teachIdx + 1)
         else setPhase('quiz')
       }
       if (phase !== 'quiz' || !item) return
@@ -254,11 +260,25 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
               <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
                 {session.emoji}
               </div>
-              <div key={teachIdx} className="teach-card pop">
-                {session.teach[teachIdx]}
-              </div>
+              {(() => {
+                const card = session.cards[teachIdx]
+                return (
+                  <div key={teachIdx} className={`teach-card pop ${card.phrase ? 'phrase-card' : ''}`}>
+                    {card.phrase ? (
+                      <>
+                        <div className="phrase-text">{card.phrase.text}</div>
+                        {card.phrase.say && <div className="phrase-say">{card.phrase.say}</div>}
+                        <div className="phrase-meaning">{card.phrase.meaning}</div>
+                        <SpeakButton text={card.phrase.text} lang={langCode} big />
+                      </>
+                    ) : (
+                      card.text
+                    )}
+                  </div>
+                )
+              })()}
               <div className="dots">
-                {session.teach.map((_, i) => (
+                {session.cards.map((_, i) => (
                   <span key={i} className={i <= teachIdx ? 'on' : ''} />
                 ))}
               </div>
@@ -268,7 +288,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
         {phase === 'quiz' && item && (
           <div key={`${idx}-${item.key}`} className="pop">
             {missed.has(item.key) && !result && <div className="retry-tag">↻ Previous mistake</div>}
-            {item.ex.type === 'mcq' && <Mcq ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />}
+            {item.ex.type === 'mcq' && <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />}
             {item.ex.type === 'tf' && <TrueFalse ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? (item.ex.answer ? 0 : 1) : undefined} />}
             {item.ex.type === 'cloze' && (
               <Cloze ex={item.ex} tiles={item.tiles} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} />
@@ -299,9 +319,9 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
               </button>
               <button
                 className="btn green"
-                onClick={() => (teachIdx + 1 < session.teach.length ? setTeachIdx(teachIdx + 1) : setPhase('quiz'))}
+                onClick={() => (teachIdx + 1 < session.cards.length ? setTeachIdx(teachIdx + 1) : setPhase('quiz'))}
               >
-                {teachIdx + 1 < session.teach.length ? 'Next' : "Let's go"}
+                {teachIdx + 1 < session.cards.length ? 'Next' : "Let's go"}
               </button>
             </>
           ) : result ? (

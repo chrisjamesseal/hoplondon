@@ -1,4 +1,4 @@
-import type { Course, Exercise, Lesson, SourceKind, Unit } from '../types'
+import type { Course, Exercise, Lesson, Phrase, SourceKind, Unit } from '../types'
 import { shuffle } from './gamify'
 
 export function uid(prefix = ''): string {
@@ -29,7 +29,7 @@ export function normalizeExercise(raw: unknown): Exercise | null {
       // Models like to put the right answer first; shuffle so position gives nothing away
       const correct = options[answer]
       const mixed = shuffle([...new Set(options)])
-      return { type: 'mcq', prompt, options: mixed, answer: mixed.indexOf(correct), explanation }
+      return { type: 'mcq', prompt, options: mixed, answer: mixed.indexOf(correct), explanation, audio: str(r.audio) || undefined }
     }
     case 'tf': {
       const statement = str(r.statement) || str(r.prompt)
@@ -63,6 +63,15 @@ export function normalizeExercise(raw: unknown): Exercise | null {
   }
 }
 
+const phrasesOf = (v: unknown): Phrase[] =>
+  (Array.isArray(v) ? v : [])
+    .map((p) => {
+      const r = (p ?? {}) as Record<string, unknown>
+      return { text: str(r.text), say: str(r.say) || undefined, meaning: str(r.meaning) }
+    })
+    .filter((p) => p.text && p.meaning)
+    .slice(0, 8)
+
 export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label: string }, generator: Course['generator']): Course {
   const r = (raw ?? {}) as Record<string, unknown>
   const units: Unit[] = (Array.isArray(r.units) ? r.units : [])
@@ -76,6 +85,7 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
             title: str(lr.title) || 'Lesson',
             emoji: emojiOf(lr.emoji),
             teach: strs(lr.teach).slice(0, 4),
+            phrases: phrasesOf(lr.phrases),
             exercises: (Array.isArray(lr.exercises) ? lr.exercises : []).map(normalizeExercise).filter((e): e is Exercise => !!e),
           }
         })
@@ -89,7 +99,8 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
   return {
     id: uid('c_'),
     title: str(r.title) || source.label,
-    emoji: str(r.emoji).slice(0, 4) || '📘',
+    emoji: [...str(r.emoji)].slice(0, 4).join('') || '📘',
+    lang: /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(str(r.lang)) ? str(r.lang) : undefined,
     summary: str(r.summary),
     source,
     generator,

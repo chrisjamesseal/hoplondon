@@ -2,6 +2,16 @@ import { useMemo, useState } from 'react'
 import type { ClozeExercise, MatchExercise, McqExercise, TrueFalseExercise } from '../types'
 import { shuffle } from '../lib/gamify'
 import { BLANK } from '../lib/normalize'
+import { canSpeak, speak } from '../lib/speech'
+
+export function SpeakButton({ text, lang, big = false }: { text: string; lang?: string; big?: boolean }) {
+  if (!canSpeak()) return null
+  return (
+    <button type="button" className={`speak-btn ${big ? 'big' : ''}`} onClick={() => speak(text, lang)} aria-label={`Hear ${text}`}>
+      🔊
+    </button>
+  )
+}
 
 interface ChoiceProps<E> {
   ex: E
@@ -15,10 +25,16 @@ interface ChoiceProps<E> {
 const mark = (i: number, value: number | null, reveal?: number) =>
   reveal === undefined ? (value === i ? 'selected' : '') : i === reveal ? 'is-right' : value === i ? 'is-wrong' : ''
 
-export function Mcq({ ex, value, onChange, locked, reveal }: ChoiceProps<McqExercise>) {
+export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<McqExercise> & { lang?: string }) {
   const [lead, ...rest] = ex.prompt.split('\n\n')
   return (
     <div className="ex">
+      {ex.audio && (
+        <div className="listen">
+          <SpeakButton text={ex.audio} lang={lang} big />
+          <span className="muted small">Tap to listen</span>
+        </div>
+      )}
       <h2 className="ex-title">{rest.length ? lead : 'Choose the right answer'}</h2>
       <p className="ex-prompt">{rest.length ? <Gap text={rest.join('\n\n')} /> : ex.prompt}</p>
       <div className="choices">

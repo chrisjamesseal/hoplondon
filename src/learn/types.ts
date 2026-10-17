@@ -1,4 +1,4 @@
-export type SourceKind = 'pdf' | 'topic' | 'link' | 'demo'
+export type SourceKind = 'pdf' | 'topic' | 'link' | 'language' | 'demo'
 
 export interface McqExercise {
   type: 'mcq'
@@ -6,6 +6,8 @@ export interface McqExercise {
   options: string[]
   answer: number
   explanation?: string
+  /** Foreign phrase to read aloud; shows a speaker button on the question */
+  audio?: string
 }
 
 export interface TrueFalseExercise {
@@ -32,6 +34,14 @@ export interface MatchExercise {
 
 export type Exercise = McqExercise | TrueFalseExercise | ClozeExercise | MatchExercise
 
+/** A phrase to learn in a language course */
+export interface Phrase {
+  text: string
+  /** Easy pronunciation, e.g. bon-ZHOOR */
+  say?: string
+  meaning: string
+}
+
 export interface Lesson {
   id: string
   title: string
@@ -39,6 +49,8 @@ export interface Lesson {
   emoji?: string
   /** Short teaching cards shown before the exercises */
   teach: string[]
+  /** Phrase cards shown after the teach cards (language courses) */
+  phrases?: Phrase[]
   exercises: Exercise[]
 }
 
@@ -54,6 +66,8 @@ export interface Course {
   id: string
   title: string
   emoji: string
+  /** Speech language code such as es-ES, for reading phrases aloud */
+  lang?: string
   summary: string
   source: { kind: SourceKind; label: string }
   generator: 'claude' | 'offline' | 'demo'

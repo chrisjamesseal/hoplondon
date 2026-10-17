@@ -4,7 +4,7 @@ import { useLearn } from '../store'
 import { courseProgress } from '../lib/gamify'
 import { Card, ProgressBar } from '../components'
 
-const SOURCE_ICON = { pdf: '📄', topic: '💭', link: '🔗', demo: '🌱' }
+const SOURCE_ICON = { pdf: '📄', topic: '💭', link: '🔗', language: '🗣️', demo: '🌱' }
 
 export default function Courses() {
   const { courses, progress, activeCourseId, setActiveCourse, deleteCourse } = useLearn()

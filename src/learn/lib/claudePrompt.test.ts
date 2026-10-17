@@ -40,3 +40,40 @@ describe('parseCourseJson', () => {
     expect(() => parseCourseJson('{"title": ')).toThrow()
   })
 })
+
+describe('language prompt', () => {
+  it('asks for phrases and audio', () => {
+    const p = buildPrompt({ kind: 'language', language: 'Japanese' })
+    expect(p).toContain('Japanese')
+    expect(p).toContain('"phrases"')
+    expect(p).toContain('"audio"')
+    expect(p).not.toMatch(/[—–]/)
+  })
+
+  it('keeps phrases, audio and lang when importing', () => {
+    const raw = {
+      title: 'Spanish',
+      lang: 'es-ES',
+      units: [
+        {
+          title: 'U',
+          lessons: [
+            {
+              title: 'Hello',
+              phrases: [{ text: 'Hola', say: 'OH-lah', meaning: 'Hello' }],
+              exercises: [
+                { type: 'mcq', prompt: 'Listen', audio: 'Hola', options: ['Hello', 'Bye'], answer: 0 },
+                { type: 'tf', statement: 'a', answer: true },
+              ],
+            },
+          ],
+        },
+      ],
+    }
+    const c = normalizeCourse(raw, { kind: 'language', label: 'Spanish' }, 'claude')
+    expect(c.lang).toBe('es-ES')
+    expect(c.units[0].lessons[0].phrases?.[0].say).toBe('OH-lah')
+    const first = c.units[0].lessons[0].exercises[0]
+    expect(first.type === 'mcq' && first.audio).toBe('Hola')
+  })
+})
