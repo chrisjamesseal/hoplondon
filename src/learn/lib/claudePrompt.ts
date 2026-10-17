@@ -14,7 +14,7 @@ const FORMAT = `{
   "summary": "One sentence on what the learner will be able to do",
   "units": [
     {
-      "title": "Unit 1: The basics",
+      "title": "Unit 1: The foundations",
       "emoji": "🌱",
       "description": "Short line on what this unit covers",
       "lessons": [
@@ -34,25 +34,33 @@ const FORMAT = `{
   ]
 }`
 
-const RULES = `Structure
-- 3 to 5 units that build from basics to harder ideas.
-- 2 to 4 lessons per unit, each on one small idea.
-- Each lesson has 2 or 3 "teach" cards (one or two short sentences each) that teach everything its exercises test, then 6 or 7 exercises.
+const RULES = `Audience
+- Curious adults aged 25 and over, many of them working professionals. Treat them as smart people who are new to this subject, never as children.
+- Tone: warm, clear and conversational, like a knowledgeable friend or a good podcast host. Friendly but grown up: no baby talk, no cartoonish examples, no gushing praise, no "fun facts" for their own sake.
+- Keep it easy to follow: short sentences, one idea at a time, and plain English. Explain any jargon the first time it appears, then use the proper term so the learner can hold their own in real conversations.
+- Use examples from adult life: work, money, health, home, travel, relationships and current affairs.
+
+Depth
+- Go beyond trivia. Cover the why and the how: causes and effects, trade-offs, common misconceptions and practical takeaways the learner could actually use.
+- Build from foundations to genuinely useful, more nuanced ideas by the final unit.
+
+Structure
+- 3 to 5 units that build on each other. Unit titles look like "Unit 1: The foundations".
+- 2 to 4 lessons per unit, each on one clear idea, with a short title (max 5 words).
+- Each lesson has 2 or 3 "teach" cards (one to three short sentences each) that teach everything its exercises test, then 6 to 8 exercises.
 
 Exercises (mix all four types in every lesson)
-- mcq: 3 or 4 short options; "answer" is the zero-based index of the correct option. Wrong options should be plausible.
-- tf: definitely true or definitely false. Make about half false.
-- cloze: exactly one "___" gap; "answer" is the missing word or short phrase; 3 plausible "distractors" of the same kind.
-- match: 3 or 4 pairs, each side under 8 words.
-- Every explanation is one friendly sentence.
-
-Pictures
-- Give every unit and every lesson one "emoji" that fits its topic. Use a different emoji for each lesson.
+- Test understanding and application, not just recall. Include short real-world scenarios ("A colleague says X. What is the best response?").
+- mcq: 3 or 4 options; "answer" is the zero-based index of the correct option. Wrong options should reflect real misconceptions, not jokes.
+- tf: definitely true or definitely false. Make about half false, ideally popular myths.
+- cloze: exactly one "___" gap; "answer" is the missing word or short phrase (often a key term); 3 plausible "distractors" of the same kind.
+- match: 3 or 4 pairs, such as terms and meanings or causes and effects, each side under 8 words.
+- Every explanation is one or two clear sentences on why the answer is right, adding a useful detail where it helps.
 
 Style
-- Plain, warm, encouraging English. Short sentences. Explain jargon before using it.
 - Never use em dashes or en dashes.
-- Only teach accurate, well-established facts.`
+- Only teach accurate, well-established facts. Where experts disagree, say so briefly.
+- Keep emoji out of lesson text (one emoji for the course icon is fine).`
 
 function sourceLine(src: PromptSource): string {
   switch (src.kind) {

@@ -354,9 +354,9 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
       {quitAsk && (
         <div className="modal-bg" onClick={() => setQuitAsk(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="big-emoji">🥺</div>
-            <h2>Wait, don't go!</h2>
-            <p className="muted">You'll lose your progress in this lesson.</p>
+            <div className="big-emoji">⏸️</div>
+            <h2>End this lesson?</h2>
+            <p className="muted">Your progress in this lesson won't be saved.</p>
             <button className="btn blue wide" onClick={() => setQuitAsk(false)}>
               Keep learning
             </button>
