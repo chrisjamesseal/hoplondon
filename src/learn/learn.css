@@ -607,3 +607,6 @@ button:disabled { cursor: default; }
 /* question counter above each exercise */
 .q-num { color: var(--muted); font-weight: 900; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; margin-bottom: 6px; }
 .q-num .retry-tag { display: inline; margin: 0; font-size: inherit; }
+
+/* path unit banners: emoji level with the unit title */
+.unit-banner-top { align-items: flex-start; }
