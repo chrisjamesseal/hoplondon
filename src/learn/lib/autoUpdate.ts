@@ -10,7 +10,7 @@ function currentBuild(): string | null {
 
 async function check() {
   // Never reload mid lesson, or the lesson in progress would restart
-  if (/^#\/(lesson|practice)/.test(location.hash)) return
+  if (/^#\/(lesson|practice|quiz|jump)/.test(location.hash)) return
   const mine = currentBuild()
   if (!mine) return
   try {
