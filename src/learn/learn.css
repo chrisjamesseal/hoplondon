@@ -547,7 +547,7 @@ button:disabled { cursor: default; }
 
 /* key terms in teach cards and explanations */
 .em { color: var(--em); font-weight: 900; }
-.feedback .em { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.feedback .em { color: inherit; font-size: inherit; font-weight: 900; text-decoration: none; }
 
 /* tap a foreign word to see what it means */
 .hint-wrap { position: relative; display: inline-block; }
