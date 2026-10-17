@@ -514,3 +514,11 @@ button:disabled { cursor: default; }
 .lang-opt.active { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 3px 0 var(--blue); }
 .lang-flag { font-size: 28px; line-height: 1; }
 .backup-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+/* ---------- centred exercises ---------- */
+.quiz { min-height: calc(100dvh - 400px); display: flex; flex-direction: column; justify-content: center; }
+.quiz .ex-title, .quiz .ex-prompt, .quiz .retry-tag, .quiz .cloze-sentence { text-align: center; }
+.quiz .choice { justify-content: center; text-align: center; position: relative; padding-left: 60px; padding-right: 60px; }
+.quiz .choice-key { position: absolute; left: 16px; }
+.quiz .tf-btn { padding-left: 16px; padding-right: 16px; }
+.quiz .match-item { text-align: center; justify-content: center; }

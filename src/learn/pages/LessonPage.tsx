@@ -286,7 +286,7 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
           </div>
         )}
         {phase === 'quiz' && item && (
-          <div key={`${idx}-${item.key}`} className="pop">
+          <div key={`${idx}-${item.key}`} className="pop quiz">
             {missed.has(item.key) && !result && <div className="retry-tag">↻ Previous mistake</div>}
             {item.ex.type === 'mcq' && <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />}
             {item.ex.type === 'tf' && <TrueFalse ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? (item.ex.answer ? 0 : 1) : undefined} />}
