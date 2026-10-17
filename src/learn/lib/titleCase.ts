@@ -31,3 +31,13 @@ export function titleCase(text: string): string {
     })
     .join('')
 }
+
+/**
+ * "Unit 1: the foundations" -> { label: "Unit 1", name: "The Foundations" }.
+ * Titles without a "Unit N" start come back whole, with no label.
+ */
+export function splitUnitTitle(title: string): { label: string | null; name: string } {
+  const m = title.match(/^\s*(unit\s*\d+)\s*[:.\-–—]\s*(.+)$/i)
+  if (!m) return { label: null, name: titleCase(title) }
+  return { label: titleCase(m[1]), name: titleCase(m[2]) }
+}

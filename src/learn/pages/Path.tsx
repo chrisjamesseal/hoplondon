@@ -1,13 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { flatLessons, nextStep, quizKey, stepDone, stepUnlocked } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
+import { courseColours } from '../lib/emojiColour'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
 import { titleCase } from '../lib/titleCase'
 
-const UNIT_COLOURS = ['green', 'blue', 'purple', 'orange', 'pink']
 // Horizontal offsets that make the lesson nodes snake down the page
 const SNAKE = [0, 44, 70, 44, 0, -44, -70, -44]
 
@@ -15,6 +15,8 @@ export default function Path() {
   const course = useActiveCourse()
   const { progress } = useLearn()
   const navigate = useNavigate()
+  // Each unit gets the colour that suits its emoji best; emoji that still clash get a neutral plate
+  const colours = useMemo(() => (course ? courseColours(course) : []), [course])
 
   // Open the path at the next thing to do, not the top of the course
   useEffect(() => {
@@ -41,11 +43,14 @@ export default function Path() {
   return (
     <div className="path-page">
       <h1 className="path-title">
-        {course.emoji} {titleCase(course.title)}
+        <span className="path-title-emoji" aria-hidden>
+          {course.emoji}
+        </span>
+        {titleCase(course.title)}
       </h1>
 
       {course.units.map((unit, ui) => {
-        const colour = UNIT_COLOURS[ui % UNIT_COLOURS.length]
+        const { colour, plateUnit, plateLessons } = colours[ui]
         const done = unit.lessons.filter((l) => progress[l.id]?.completions).length
         const quizId = quizKey(unit.id)
         const quizStep = { kind: 'quiz' as const, id: quizId, unitIndex: ui }
@@ -58,18 +63,20 @@ export default function Path() {
           <section key={unit.id} className="unit">
             <div className={`unit-banner ${colour}`}>
               <div className="unit-banner-top">
-                <span className="unit-emoji">{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
+                <span className={`unit-emoji ${plateUnit ? 'plate' : ''}`}>{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
                 <div className="unit-banner-text">
                   <h2>{titleCase(unit.title)}</h2>
                   <p>{plainText(unit.description)}</p>
                 </div>
               </div>
-              <div className="unit-progress">
-                <ProgressBar value={stepsDone / steps} color="gold" height={10} label={`${unit.title} progress`} />
-                <span>
-                  {done}/{unit.lessons.length}
-                </span>
-              </div>
+              {stepsDone > 0 && (
+                <div className="unit-progress">
+                  <ProgressBar value={stepsDone / steps} color="gold" height={10} label={`${unit.title} progress`} />
+                  <span>
+                    {done}/{unit.lessons.length}
+                  </span>
+                </div>
+              )}
               {unitLocked && (
                 <button className="jump-btn" onClick={() => navigate(`/jump/${unit.id}`)}>
                   ⏭️ Jump here
@@ -77,7 +84,7 @@ export default function Path() {
               )}
             </div>
             <div className="nodes">
-              {unit.lessons.map((lesson) => {
+              {unit.lessons.map((lesson, li) => {
                 const i = lessonIndex.get(lesson.id) ?? 0
                 const p = progress[lesson.id]
                 const unlocked = stepUnlocked(course, lesson.id, progress)
@@ -92,7 +99,13 @@ export default function Path() {
                       onClick={() => navigate(`/lesson/${lesson.id}`)}
                       aria-label={`${lesson.title}${state === 'locked' ? ' (locked)' : ''}`}
                     >
-                      {state === 'done' ? (p!.bestAccuracy >= 1 && !p!.skipped ? '👑' : '✓') : state === 'locked' ? '🔒' : pickEmoji(lesson.emoji, lesson.title, i)}
+                      {state === 'done' ? (
+                        p!.bestAccuracy >= 1 && !p!.skipped ? '👑' : '✓'
+                      ) : state === 'locked' ? (
+                        '🔒'
+                      ) : (
+                        <span className={`node-emoji ${plateLessons[li] ? 'plate' : ''}`}>{pickEmoji(lesson.emoji, lesson.title, i)}</span>
+                      )}
                     </button>
                     <div className="node-label">{titleCase(lesson.title)}</div>
                   </div>

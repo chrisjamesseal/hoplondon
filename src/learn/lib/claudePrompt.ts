@@ -5,7 +5,7 @@
 
 export type PromptSource =
   | { kind: 'topic'; topic: string }
-  | { kind: 'link'; url: string }
+  | { kind: 'link'; url: string; transcript?: string }
   | { kind: 'pdf'; fileName?: string }
 
 const FORMAT = `{
@@ -81,7 +81,9 @@ function sourceLine(src: PromptSource): string {
     case 'topic':
       return `Make a course that teaches: ${src.topic}`
     case 'link':
-      return `Read this page and make a course that teaches what it covers: ${src.url}`
+      return src.transcript
+        ? `Make a course that teaches the video at ${src.url}. You can't watch it, so here is its transcript. Stick to what is said in it and don't add facts from the video's title or from memory.\n\n<transcript>\n${src.transcript}\n</transcript>`
+        : `Read this page and make a course that teaches what it covers: ${src.url}`
     case 'pdf':
       return `Make a course that teaches the material in the PDF I've attached${src.fileName ? ` (${src.fileName})` : ''}. Stick to what the PDF says.`
   }
