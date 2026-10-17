@@ -69,12 +69,14 @@ export default function Path() {
                   <p>{plainText(unit.description)}</p>
                 </div>
               </div>
-              <div className="unit-progress">
-                <ProgressBar value={stepsDone / steps} color="gold" height={10} label={`${unit.title} progress`} />
-                <span>
-                  {done}/{unit.lessons.length}
-                </span>
-              </div>
+              {stepsDone > 0 && (
+                <div className="unit-progress">
+                  <ProgressBar value={stepsDone / steps} color="gold" height={10} label={`${unit.title} progress`} />
+                  <span>
+                    {done}/{unit.lessons.length}
+                  </span>
+                </div>
+              )}
               {unitLocked && (
                 <button className="jump-btn" onClick={() => navigate(`/jump/${unit.id}`)}>
                   ⏭️ Jump here
