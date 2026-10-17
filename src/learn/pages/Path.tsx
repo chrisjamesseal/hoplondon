@@ -5,6 +5,7 @@ import { flatLessons, nextStep, quizKey, stepDone, stepUnlocked } from '../lib/g
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
+import { titleCase } from '../lib/titleCase'
 
 const UNIT_COLOURS = ['green', 'blue', 'purple', 'orange', 'pink']
 // Horizontal offsets that make the lesson nodes snake down the page
@@ -25,7 +26,7 @@ export default function Path() {
     return (
       <Card className="empty">
         <div className="big-emoji">🌱</div>
-        <h2>Nothing to learn yet</h2>
+        <h2>Nothing to Learn Yet</h2>
         <p>Upload a PDF, type a topic or paste a link and Leap turns it into bite-sized lessons.</p>
         <Link to="/create" className="btn green">
           Create a course
@@ -40,7 +41,7 @@ export default function Path() {
   return (
     <div className="path-page">
       <h1 className="path-title">
-        {course.emoji} {course.title}
+        {course.emoji} {titleCase(course.title)}
       </h1>
 
       {course.units.map((unit, ui) => {
@@ -59,7 +60,7 @@ export default function Path() {
               <div className="unit-banner-top">
                 <span className="unit-emoji">{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
                 <div className="unit-banner-text">
-                  <h2>{unit.title}</h2>
+                  <h2>{titleCase(unit.title)}</h2>
                   <p>{plainText(unit.description)}</p>
                 </div>
               </div>
@@ -93,7 +94,7 @@ export default function Path() {
                     >
                       {state === 'done' ? (p!.bestAccuracy >= 1 && !p!.skipped ? '👑' : '✓') : state === 'locked' ? '🔒' : pickEmoji(lesson.emoji, lesson.title, i)}
                     </button>
-                    <div className="node-label">{lesson.title}</div>
+                    <div className="node-label">{titleCase(lesson.title)}</div>
                   </div>
                 )
               })}
@@ -107,7 +108,7 @@ export default function Path() {
                 >
                   {quizOpen || quizDone ? '🏆' : '🔒'}
                 </button>
-                <div className="node-label">Unit quiz</div>
+                <div className="node-label">Unit Quiz</div>
               </div>
             </div>
           </section>

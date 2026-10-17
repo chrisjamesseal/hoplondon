@@ -5,6 +5,7 @@ import { shuffle } from '../lib/gamify'
 import { BLANK } from '../lib/normalize'
 import { canSpeak, speak } from '../lib/speech'
 import { RichText } from './RichText'
+import { titleCase } from '../lib/titleCase'
 
 export function SpeakButton({ text, lang, big = false }: { text: string; lang?: string; big?: boolean }) {
   if (!canSpeak()) return null
@@ -31,7 +32,7 @@ export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<M
   const [lead, ...rest] = ex.prompt.split('\n\n')
   return (
     <div className={`ex ${ex.audio && canSpeak() ? 'has-dock' : ''}`}>
-      <h2 className="ex-title">{rest.length ? lead : 'Choose the right answer'}</h2>
+      <h2 className="ex-title">{rest.length ? titleCase(lead) : 'Choose the Right Answer'}</h2>
       <p className="ex-prompt">{rest.length ? <Gap text={rest.join('\n\n')} /> : <RichText text={ex.prompt} />}</p>
       <div className="choices">
         {ex.options.map((o, i) => (
@@ -59,7 +60,7 @@ export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<M
 export function TrueFalse({ ex, value, onChange, locked, reveal }: ChoiceProps<TrueFalseExercise>) {
   return (
     <div className="ex">
-      <h2 className="ex-title">True or false?</h2>
+      <h2 className="ex-title">True or False?</h2>
       <p className="ex-prompt statement">
         <RichText text={ex.statement} />
       </p>
@@ -83,7 +84,7 @@ export function Cloze({ ex, tiles, value, onChange, locked }: ChoiceProps<ClozeE
   const [before, after] = ex.sentence.split(BLANK)
   return (
     <div className="ex">
-      <h2 className="ex-title">Fill in the gap</h2>
+      <h2 className="ex-title">Fill in the Gap</h2>
       <p className="ex-prompt cloze-sentence">
         <RichText text={before} />
         <button className={`gap ${value !== null ? 'filled' : ''}`} disabled={locked || value === null} onClick={() => onChange(null)}>
@@ -140,7 +141,7 @@ export function Match({ ex, onDone, onTap }: { ex: MatchExercise; onDone: (mista
 
   return (
     <div className="ex">
-      <h2 className="ex-title">{ex.prompt}</h2>
+      <h2 className="ex-title">{titleCase(ex.prompt)}</h2>
       <div className="match">
         <div className="match-col">
           {lefts.map((x) => (

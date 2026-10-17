@@ -603,3 +603,20 @@ button:disabled { cursor: default; }
 
 /* home unit list: emoji sits at the top of each card, level with the title */
 .unit-row-emoji { align-self: flex-start; }
+
+/* question counter above each exercise */
+.q-num { color: var(--muted); font-weight: 900; text-transform: uppercase; font-size: 13px; letter-spacing: 0.5px; margin-bottom: 6px; }
+.q-num .retry-tag { display: inline; margin: 0; font-size: inherit; }
+
+/* path unit banners: emoji level with the unit title */
+.unit-banner-top { align-items: flex-start; }
+
+/* home course card: emoji sits above the title so the text gets the full width */
+.home-page .course-card-top { flex-direction: column; gap: 10px; }
+
+/* home unit list: lesson count sits at the end of the title line, in the title colour */
+.unit-row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.unit-row-head .unit-row-count { color: var(--text); font-weight: 900; flex-shrink: 0; }
+
+/* delete lives at the bottom of the course page, quieter than the main actions */
+.home-page .delete-course { margin-top: 12px; }

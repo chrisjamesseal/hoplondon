@@ -19,6 +19,7 @@ import {
   unitQuizExercises,
 } from '../lib/gamify'
 import { play } from '../lib/sound'
+import { titleCase } from '../lib/titleCase'
 import { clearPause, loadPause, savePause } from '../lib/pause'
 import { Confetti, ProgressBar } from '../components'
 import { pickEmoji } from '../lib/emoji'
@@ -40,7 +41,7 @@ interface Item {
 
 type Phase = 'teach' | 'quiz' | 'done' | 'failed' | 'course' | 'out'
 
-const PRAISE = ['Nice!', 'Great job!', 'Correct!', 'You got it!', 'Brilliant!', 'Spot on!']
+const PRAISE = ['Nice!', 'Great Job!', 'Correct!', 'You Got It!', 'Brilliant!', 'Spot On!']
 
 function findLesson(courses: Course[], id: string): { course: Course; lesson: Lesson } | null {
   for (const course of courses) {
@@ -101,7 +102,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       return {
         course,
         key: lesson.id,
-        title: lesson.title,
+        title: titleCase(lesson.title),
         emoji: pickEmoji(lesson.emoji, lesson.title),
         cards: [...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
         exercises: lesson.exercises,
@@ -116,7 +117,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         course,
         unitIndex,
         key: mode === 'quiz' ? quizKey(unit.id) : undefined,
-        title: mode === 'quiz' ? `${unit.title} quiz` : `Jump to ${unit.title}`,
+        title: titleCase(mode === 'quiz' ? `${unit.title} quiz` : `Jump to ${unit.title}`),
         emoji: mode === 'quiz' ? '🏆' : '⏭️',
         cards: [],
         exercises: mode === 'quiz' ? unitQuizExercises(course, unitIndex) : jumpTestExercises(course, unitIndex),
@@ -287,9 +288,9 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         <Confetti />
         <div className="done-inner">
           <div className="done-mascot">🏆</div>
-          <h1>Course complete!</h1>
+          <h1>Course Complete!</h1>
           <p className="muted">
-            You finished every lesson and quiz in {course.emoji} {course.title}.
+            You finished every lesson and quiz in {course.emoji} {titleCase(course.title)}.
           </p>
           <div className="done-stats two">
             <div className="done-stat green">
@@ -330,7 +331,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       <div className="lesson out-screen">
         <div className="done-inner">
           <div className="done-mascot">{mode === 'quiz' ? '📝' : '⏭️'}</div>
-          <h1>Not quite</h1>
+          <h1>Not Quite</h1>
           <p className="muted">
             You got {earned.correct} of {total}. You need {need} to pass{mode === 'jump' ? ' and jump ahead' : ''}.
           </p>
@@ -350,7 +351,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   if (phase === 'done') {
     const cp = course ? courseProgress(course, useLearn.getState().progress) : null
     const streak = liveStreak(store.streak, store.lastActiveDay, dayKey())
-    const heading = { lesson: 'Lesson complete!', practice: 'Practice complete!', quiz: 'Quiz passed!', jump: 'You jumped ahead!' }[mode]
+    const heading = { lesson: 'Lesson Complete!', practice: 'Practice Complete!', quiz: 'Quiz Passed!', jump: 'You Jumped Ahead!' }[mode]
     return (
       <div className="lesson done-screen">
         <Confetti />
@@ -391,7 +392,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
             <div className="done-course">
               <div className="row-between small">
                 <span>
-                  {course.emoji} {course.title}
+                  {course.emoji} {titleCase(course.title)}
                 </span>
                 <strong>{Math.round(cp.ratio * 100)}%</strong>
               </div>
@@ -418,7 +419,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       <div className="lesson out-screen">
         <div className="done-inner">
           <div className="done-mascot">💔</div>
-          <h1>You ran out of hearts</h1>
+          <h1>You Ran Out of Hearts</h1>
           <p className="muted">
             Do a quick practice to refill them, or wait {mins} min for the next one.
             {hasPause ? ' Your place in this lesson is saved, so you will carry on from the same question.' : ''}
@@ -437,6 +438,8 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   }
 
   const card = session.cards[teachIdx]
+  // A resumed lesson keeps counting from where it stopped
+  const qNum = idx + 1 + (resume?.solved ?? 0)
   return (
     <GlossContext.Provider value={gloss}>
       <div className="lesson">
@@ -493,7 +496,11 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
           )}
           {phase === 'quiz' && item && (
             <div key={`${idx}-${item.key}`} className="pop">
-              {missed.has(item.key) && !result && !tested && <div className="retry-tag">↻ Previous mistake</div>}
+              <div className="q-num">
+                {/* Repeats of earlier mistakes come after the last numbered question */}
+                {qNum <= total ? `Question ${qNum} of ${total}` : 'Review'}
+                {missed.has(item.key) && !result && !tested && <span className="retry-tag"> · ↻ Previous mistake</span>}
+              </div>
               {item.ex.type === 'mcq' && (
                 <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />
               )}
@@ -546,7 +553,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
                 <div className="feedback">
                   <div className="feedback-icon">{result.correct ? '✓' : '✕'}</div>
                   <div>
-                    <strong>{result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not quite'}</strong>
+                    <strong>{result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not Quite'}</strong>
                     {!result.correct && item && correctText(item.ex) && <p>Correct answer: {plainText(correctText(item.ex))}</p>}
                     {result.note && (
                       <p className="note">
@@ -576,7 +583,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
           <div className="modal-bg" onClick={() => setQuitAsk(false)}>
             <div className="modal" onClick={(e) => e.stopPropagation()}>
               <div className="big-emoji">⏸️</div>
-              <h2>{tested ? 'End this quiz?' : 'End this lesson?'}</h2>
+              <h2>{tested ? 'End This Quiz?' : 'End This Lesson?'}</h2>
               <p className="muted">Your answers so far won't be saved.</p>
               <button className="btn blue wide" onClick={() => setQuitAsk(false)}>
                 Keep going
