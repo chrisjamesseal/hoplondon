@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLearn } from '../store'
 import { Card } from '../components'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from '../lib/phrasebook'
@@ -38,7 +38,10 @@ async function copyText(text: string): Promise<boolean> {
 export default function Create() {
   const { addCourse, courses, setActiveCourse } = useLearn()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<Tab>('topic')
+  // Page one picks a method; page two (/create/:method) is its form
+  const { method } = useParams()
+  const chosen = TABS.find((t) => t.id === method)
+  const tab: Tab = chosen?.id ?? 'topic'
   const [file, setFile] = useState<File | null>(null)
   const [topic, setTopic] = useState('')
   const [link, setLink] = useState('')
@@ -128,19 +131,32 @@ export default function Create() {
 
   const prompt = promptReady ? (() => { try { return buildPrompt(promptSource()) } catch { return '' } })() : ''
 
+  if (!chosen) {
+    return (
+      <div className="create">
+        <h1>Learn Anything</h1>
+        <p className="muted">Pick what to learn. Claude builds the lessons, or grab a ready made phrase course.</p>
+
+        <div className="tabs">
+          {TABS.map((t) => (
+            <button key={t.id} className="tab" onClick={() => navigate(`/create/${t.id}`)}>
+              <span className="tab-icon">{t.icon}</span>
+              <span className="tab-label">{t.label}</span>
+              <span className="tab-hint">{t.hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="create">
-      <h1>Learn Anything</h1>
-      <p className="muted">Pick what to learn. Claude builds the lessons, or grab a ready made phrase course.</p>
-
-      <div className="tabs">
-        {TABS.map((t) => (
-          <button key={t.id} className={`tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-            <span className="tab-icon">{t.icon}</span>
-            <span className="tab-label">{t.label}</span>
-            <span className="tab-hint">{t.hint}</span>
-          </button>
-        ))}
+      <div className="cat-head">
+        <Link to="/create" className="icon-btn cat-back" aria-label="Back to choices">
+          ‹
+        </Link>
+        <h1>{chosen.label}</h1>
       </div>
 
       <Card>
