@@ -114,10 +114,14 @@ export const useLearn = create<LearnState>()(
     }),
     {
       name: 'leap-v1',
-      version: 2,
-      // v1 stored a Claude API key; drop it
+      version: 3,
       migrate: (persisted) => {
+        // v1 stored a Claude API key; drop it
         const { apiKey: _drop, ...rest } = (persisted ?? {}) as Record<string, unknown>
+        // v3 rewrote the starter course; lesson ids are unchanged so progress carries over
+        if (Array.isArray(rest.courses)) {
+          rest.courses = (rest.courses as Course[]).map((c) => (c.id === DEMO_COURSE.id ? DEMO_COURSE : c))
+        }
         return rest as unknown as LearnState
       },
     },

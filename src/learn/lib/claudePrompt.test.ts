@@ -14,6 +14,12 @@ describe('buildPrompt', () => {
     expect(buildPrompt({ kind: 'pdf', fileName: 'notes.pdf' })).toContain('PDF I\'ve attached (notes.pdf)')
   })
 
+  it('pitches content at adults', () => {
+    const p = buildPrompt({ kind: 'topic', topic: 'Inflation' })
+    expect(p).toContain('aged 25 and over')
+    expect(p).toMatch(/never as children/)
+  })
+
   it('has no long dashes', () => {
     expect(buildPrompt({ kind: 'link', url: 'https://x.y' })).not.toMatch(/[—–]/)
   })
