@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLearn } from '../store'
 import { Card } from '../components'
+import { buildLanguageCourse, languageLabel, LANGUAGES } from '../lib/phrasebook'
 import { normaliseUrl } from '../lib/extract'
 import { normalizeCourse } from '../lib/normalize'
 import { buildPrompt, CLAUDE_URL, parseCourseJson, type PromptSource } from '../lib/claudePrompt'
@@ -32,13 +33,13 @@ async function copyText(text: string): Promise<boolean> {
 }
 
 export default function Create() {
-  const { addCourse } = useLearn()
+  const { addCourse, courses, setActiveCourse } = useLearn()
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('topic')
   const [file, setFile] = useState<File | null>(null)
   const [topic, setTopic] = useState('')
   const [link, setLink] = useState('')
-  const [language, setLanguage] = useState('')
+  const [langId, setLangId] = useState('')
   const [drag, setDrag] = useState(false)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState<'ok' | 'manual' | null>(null)
@@ -47,22 +48,20 @@ export default function Create() {
   const pdfRef = useRef<HTMLInputElement>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => setCopied(null), [tab, topic, link, file, language])
+  useEffect(() => setCopied(null), [tab, topic, link, file, langId])
 
-  const ready = tab === 'pdf' ? !!file : tab === 'topic' ? topic.trim().length > 1 : tab === 'language' ? language.trim().length > 1 : link.trim().length > 3
+  const ready = tab === 'pdf' ? !!file : tab === 'topic' ? topic.trim().length > 1 : tab === 'language' ? !!langId : link.trim().length > 3
   // A PDF is attached in Claude itself, so the prompt doesn't need the file chosen here
   const promptReady = tab === 'pdf' || ready
 
   function promptSource(): PromptSource {
     if (tab === 'topic') return { kind: 'topic', topic: topic.trim() }
     if (tab === 'link') return { kind: 'link', url: normaliseUrl(link) }
-    if (tab === 'language') return { kind: 'language', language: language.trim() }
     return { kind: 'pdf', fileName: file?.name }
   }
 
   function sourceLabel(): { kind: SourceKind; label: string } {
     if (tab === 'topic' && topic.trim()) return { kind: 'topic', label: topic.trim() }
-    if (tab === 'language' && language.trim()) return { kind: 'language', label: `${language.trim()} for travellers` }
     if (tab === 'link' && link.trim()) {
       try {
         return { kind: 'link', label: new URL(normaliseUrl(link)).hostname }
@@ -72,6 +71,16 @@ export default function Create() {
     }
     if (tab === 'pdf' && file) return { kind: 'pdf', label: titleFromFile(file.name) }
     return { kind: 'topic', label: 'Claude course' }
+  }
+
+  function startLanguage() {
+    const lang = LANGUAGES.find((l) => l.id === langId)
+    if (!lang) return
+    // Already made it? Just switch to it instead of making a copy
+    const have = courses.find((c) => c.source.kind === 'language' && c.source.label === languageLabel(lang))
+    if (have) setActiveCourse(have.id)
+    else addCourse(buildLanguageCourse(lang))
+    navigate('/')
   }
 
   async function copyPrompt() {
@@ -111,7 +120,7 @@ export default function Create() {
   return (
     <div className="create">
       <h1>Learn anything</h1>
-      <p className="muted">Pick what to learn and Claude builds the lessons.</p>
+      <p className="muted">Pick what to learn. Claude builds the lessons, or grab a ready made phrase course.</p>
 
       <div className="tabs">
         {TABS.map((t) => (
@@ -178,15 +187,16 @@ export default function Create() {
 
         {tab === 'language' && (
           <div className="field">
-            <label htmlFor="language">Which language?</label>
-            <input
-              id="language"
-              className="input"
-              placeholder="e.g. Japanese"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-            />
-            <p className="tiny muted">A crash course in the phrases you need on the ground, with audio so you can hear them.</p>
+            <label>Which language are you visiting?</label>
+            <div className="lang-grid" role="radiogroup" aria-label="Language">
+              {LANGUAGES.map((l) => (
+                <button key={l.id} role="radio" aria-checked={langId === l.id} className={`lang-opt ${langId === l.id ? 'active' : ''}`} onClick={() => setLangId(l.id)}>
+                  <span className="lang-flag">{l.flag}</span>
+                  <span>{l.name}</span>
+                </button>
+              ))}
+            </div>
+            <p className="tiny muted">10 must know phrases with audio: hello, thanks, prices, toilets and more. Ready instantly.</p>
           </div>
         )}
 
@@ -206,6 +216,11 @@ export default function Create() {
 
         {error && <div className="error">😬 {error}</div>}
 
+        {tab === 'language' ? (
+          <button className="btn green wide" disabled={!langId} onClick={startLanguage}>
+            Start course
+          </button>
+        ) : (
         <ol className="steps">
             <li className="step">
               <span className="step-num">1</span>
@@ -272,6 +287,7 @@ export default function Create() {
               </div>
             </li>
         </ol>
+        )}
       </Card>
     </div>
   )

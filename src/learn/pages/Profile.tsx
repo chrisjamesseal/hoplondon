@@ -13,6 +13,28 @@ const GOALS = [
 export default function Profile() {
   const s = useLearn()
   const [resetAsk, setResetAsk] = useState(false)
+  const [backupMsg, setBackupMsg] = useState('')
+
+  async function backup() {
+    try {
+      await navigator.clipboard.writeText(localStorage.getItem('leap-v1') ?? '')
+      setBackupMsg('Copied. Paste it into Notes to keep it safe.')
+    } catch {
+      setBackupMsg("Couldn't copy. Try again.")
+    }
+  }
+
+  async function restore() {
+    try {
+      const text = (await navigator.clipboard.readText()).trim()
+      const parsed = JSON.parse(text)
+      if (!parsed?.state?.courses) throw new Error()
+      localStorage.setItem('leap-v1', text)
+      location.reload()
+    } catch {
+      setBackupMsg('Copy your backup first, then tap Restore.')
+    }
+  }
 
   const lvl = levelInfo(s.xp)
   const streak = liveStreak(s.streak, s.lastActiveDay, dayKey())
@@ -149,8 +171,17 @@ export default function Profile() {
             Reset progress
           </button>
         )}
+        <div className="backup-row">
+          <button className="btn ghost small-btn" onClick={backup}>
+            💾 Copy backup
+          </button>
+          <button className="btn ghost small-btn" onClick={restore}>
+            ♻️ Restore backup
+          </button>
+        </div>
+        {backupMsg && <p className="tiny muted">{backupMsg}</p>}
         <p className="tiny muted">
-          Everything is saved in this browser only.
+          Progress is saved on this device. Safari and a home screen icon keep separate progress, so stick to one.
         </p>
       </Card>
     </div>

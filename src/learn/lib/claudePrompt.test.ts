@@ -41,34 +41,12 @@ describe('parseCourseJson', () => {
   })
 })
 
-describe('language prompt', () => {
-  it('asks for phrases and audio', () => {
-    const p = buildPrompt({ kind: 'language', language: 'Japanese' })
-    expect(p).toContain('Japanese')
-    expect(p).toContain('"phrases"')
-    expect(p).toContain('"audio"')
-    expect(p).not.toMatch(/[—–]/)
-  })
-
+describe('language courses', () => {
   it('keeps phrases, audio and lang when importing', () => {
     const raw = {
       title: 'Spanish',
       lang: 'es-ES',
-      units: [
-        {
-          title: 'U',
-          lessons: [
-            {
-              title: 'Hello',
-              phrases: [{ text: 'Hola', say: 'OH-lah', meaning: 'Hello' }],
-              exercises: [
-                { type: 'mcq', prompt: 'Listen', audio: 'Hola', options: ['Hello', 'Bye'], answer: 0 },
-                { type: 'tf', statement: 'a', answer: true },
-              ],
-            },
-          ],
-        },
-      ],
+      units: [{ title: 'U', lessons: [{ title: 'Hello', phrases: [{ text: 'Hola', say: 'OH-lah', meaning: 'Hello' }], exercises: [{ type: 'mcq', prompt: 'Listen', audio: 'Hola', options: ['Hello', 'Bye'], answer: 0 }, { type: 'tf', statement: 'a', answer: true }] }] }],
     }
     const c = normalizeCourse(raw, { kind: 'language', label: 'Spanish' }, 'claude')
     expect(c.lang).toBe('es-ES')
