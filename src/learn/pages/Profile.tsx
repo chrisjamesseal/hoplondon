@@ -178,7 +178,7 @@ export default function Profile() {
           </button>
         )}
         <p className="tiny muted">
-          Everything is saved in this browser only. Also in this repo: <a href="../">hop, the budgeting app</a>.
+          Everything is saved in this browser only.
         </p>
       </Card>
     </div>
