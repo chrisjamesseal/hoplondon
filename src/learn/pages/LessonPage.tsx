@@ -450,9 +450,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
 
         <main className="lesson-body">
           {tested && phase === 'quiz' && (
-            <div className="test-tag">
-              {session.title} · pass with {passMark(total)} of {total}
-            </div>
+            <div className="test-tag">{session.title}</div>
           )}
           {phase === 'teach' && card && (
             <div className="teach">
