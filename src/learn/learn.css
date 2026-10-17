@@ -464,3 +464,19 @@ button:disabled { cursor: default; }
 .teach-art { font-size: 96px; line-height: 1; text-align: center; margin: 4px 0 22px; animation: art-pop 0.5s cubic-bezier(.3,1.5,.6,1); }
 @keyframes art-pop { from { opacity: 0; transform: scale(0.5) rotate(-8deg); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .teach-art { animation: none; } }
+
+/* ---------- animated completion check ---------- */
+.done-check { width: 132px; height: 132px; overflow: visible; animation: check-pop 0.6s cubic-bezier(.3,1.6,.6,1) both, check-bounce 1.2s ease-in-out 1s 2; }
+.dc-ring { fill: none; stroke: var(--gold); stroke-width: 5; stroke-dasharray: 340; stroke-dashoffset: 340; animation: dc-draw 0.6s ease-out 0.1s forwards; }
+.dc-fill { fill: var(--green); filter: drop-shadow(0 5px 0 var(--green-dark)); transform-origin: 60px 60px; animation: check-pop 0.5s cubic-bezier(.3,1.6,.6,1) 0.15s both; }
+.dc-tick { fill: none; stroke: #fff; stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 80; stroke-dashoffset: 80; animation: dc-draw 0.45s ease-out 0.55s forwards; }
+.dc-spark { stroke: var(--gold); stroke-width: 5; stroke-linecap: round; opacity: 0; transform-origin: 60px 60px; animation: dc-spark 0.7s ease-out both; }
+@keyframes dc-draw { to { stroke-dashoffset: 0; } }
+@keyframes check-pop { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes check-bounce { 50% { transform: scale(1.08); } }
+@keyframes dc-spark { 0% { opacity: 0; transform: scale(0.6); } 40% { opacity: 1; } 100% { opacity: 0; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) {
+  .done-check, .dc-fill, .dc-spark { animation: none; }
+  .dc-ring, .dc-tick { animation: none; stroke-dashoffset: 0; }
+  .dc-spark { opacity: 0; }
+}

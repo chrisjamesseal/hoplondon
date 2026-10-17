@@ -164,7 +164,14 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
       <div className="lesson done-screen">
         <Confetti />
         <div className="done-inner">
-          <div className="done-mascot">🐸</div>
+          <svg className="done-check" viewBox="0 0 120 120" role="img" aria-label="Complete">
+            <circle className="dc-ring" cx="60" cy="60" r="54" />
+            <circle className="dc-fill" cx="60" cy="60" r="46" />
+            <path className="dc-tick" d="M38 62 L54 78 L84 44" />
+            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              <line key={i} className="dc-spark" x1="60" y1="2" x2="60" y2="12" transform={`rotate(${i * 45} 60 60)`} style={{ animationDelay: `${0.7 + (i % 2) * 0.08}s` }} />
+            ))}
+          </svg>
           <h1>{practice ? 'Practice complete!' : 'Lesson complete!'}</h1>
           {practice && <p className="muted">Hearts refilled ❤️ ×{MAX_HEARTS}</p>}
           <div className="done-stats">
