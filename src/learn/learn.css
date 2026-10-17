@@ -600,3 +600,6 @@ button:disabled { cursor: default; }
 
 /* room for the START bubble above each lesson without covering the label before it */
 .nodes { gap: 56px; }
+
+/* home unit list: emoji sits at the top of each card, level with the title */
+.unit-row-emoji { align-self: flex-start; }
