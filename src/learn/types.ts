@@ -40,6 +40,8 @@ export interface Phrase {
   /** Easy pronunciation, e.g. bon-ZHOOR */
   say?: string
   meaning: string
+  /** Word by word meanings, shown when the learner taps an underlined word */
+  words?: { w: string; m: string }[]
 }
 
 export interface Lesson {
@@ -79,4 +81,6 @@ export interface LessonProgress {
   completions: number
   bestAccuracy: number
   lastCompleted: string
+  /** Passed by jumping ahead with a test, not by doing the lesson */
+  skipped?: boolean
 }

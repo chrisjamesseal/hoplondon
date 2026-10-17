@@ -37,8 +37,9 @@ export function Stats() {
 
 export default function LearnApp() {
   const syncHearts = useLearn((s) => s.syncHearts)
-  const { pathname } = useLocation()
-  const inLesson = pathname.startsWith('/lesson') || pathname.startsWith('/practice')
+  const location = useLocation()
+  const { pathname } = location
+  const inLesson = /^\/(lesson|practice|quiz|jump)/.test(pathname)
 
   useEffect(() => {
     syncHearts()
@@ -49,11 +50,13 @@ export default function LearnApp() {
   useEffect(() => window.scrollTo(0, 0), [pathname])
 
   if (inLesson) {
-    // Keyed by path so moving from a lesson to practice starts a fresh session
+    // Keyed per visit so moving between sessions, or retrying a quiz, starts fresh
     return (
-      <Routes key={pathname}>
+      <Routes key={location.key}>
         <Route path="/lesson/:lessonId" element={<LessonPage />} />
-        <Route path="/practice" element={<LessonPage practice />} />
+        <Route path="/practice" element={<LessonPage mode="practice" />} />
+        <Route path="/quiz/:unitId" element={<LessonPage mode="quiz" />} />
+        <Route path="/jump/:unitId" element={<LessonPage mode="jump" />} />
       </Routes>
     )
   }

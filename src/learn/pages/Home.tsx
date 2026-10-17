@@ -1,12 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
-import { courseProgress, dayKey, lessonsOn, nextLesson } from '../lib/gamify'
+import { courseProgress, dayKey, flatLessons, lessonsOn, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
+import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { progress, lessonsByDay, dailyLessons } = useLearn()
+  const { progress, lessonsByDay, dailyLessons, archived, archiveCourse } = useLearn()
   const navigate = useNavigate()
 
   if (!course) {
@@ -23,7 +24,10 @@ export default function Home() {
   }
 
   const cp = courseProgress(course, progress)
-  const next = nextLesson(course, progress)
+  const step = nextStep(course, progress)
+  const nextTitle =
+    step?.kind === 'lesson' ? flatLessons(course).find((l) => l.id === step.id)?.title : step ? `${course.units[step.unitIndex].title} quiz` : undefined
+  const isArchived = (archived ?? []).includes(course.id)
   const today = lessonsOn(dayKey(), lessonsByDay, progress)
 
   return (
@@ -43,14 +47,31 @@ export default function Home() {
           </strong>
         </div>
         <ProgressBar value={cp.ratio} label="Course progress" />
-        {next ? (
-          <button className="btn green wide" onClick={() => navigate(`/lesson/${next.id}`)}>
-            🚀 {next.title}
+        {step ? (
+          <button className="btn green wide" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
+            {step.kind === 'quiz' ? '🏆' : '🚀'} {nextTitle}
           </button>
         ) : (
-          <button className="btn gold wide" onClick={() => navigate('/practice')}>
-            🏆 Course complete! Practise to stay sharp
-          </button>
+          <div className="complete-box">
+            <strong>🏆 Course complete!</strong>
+            <span className="muted small">You finished every lesson and quiz.</span>
+            <div className="complete-actions">
+              <button className="btn blue" onClick={() => navigate('/practice')}>
+                💪 Practise
+              </button>
+              {!isArchived && (
+                <button
+                  className="btn ghost"
+                  onClick={() => {
+                    archiveCourse(course.id)
+                    navigate('/courses')
+                  }}
+                >
+                  📦 Add to archive
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </Card>
 
@@ -73,7 +94,7 @@ export default function Home() {
             <span className="unit-row-emoji">{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
             <div className="unit-row-main">
               <strong>{unit.title}</strong>
-              <span className="muted small">{unit.description}</span>
+              <span className="muted small">{plainText(unit.description)}</span>
               <ProgressBar value={done / unit.lessons.length} color="gold" height={10} label={`${unit.title} progress`} />
             </div>
             <span className="unit-row-count">

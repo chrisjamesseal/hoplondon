@@ -1,17 +1,36 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { Course, Exercise, Lesson, Phrase } from '../types'
+import { useActiveCourse, useLearn } from '../store'
+import {
+  courseProgress,
+  dayKey,
+  flatLessons,
+  isCourseComplete,
+  jumpTestExercises,
+  lessonXp,
+  liveStreak,
+  MAX_HEARTS,
+  nextHeartIn,
+  passMark,
+  quizKey,
+  shuffle,
+  stepsBeforeUnit,
+  unitQuizExercises,
+} from '../lib/gamify'
+import { play } from '../lib/sound'
+import { clearPause, loadPause, savePause } from '../lib/pause'
+import { Confetti, ProgressBar } from '../components'
+import { pickEmoji } from '../lib/emoji'
+import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse } from './Exercises'
+import { buildGlossary, GlossContext, plainText, RichText } from './RichText'
+
+export type LessonMode = 'lesson' | 'practice' | 'quiz' | 'jump'
 
 interface TeachCard {
   text?: string
   phrase?: Phrase
 }
-import { useActiveCourse, useLearn } from '../store'
-import { courseProgress, dayKey, flatLessons, lessonXp, liveStreak, MAX_HEARTS, nextHeartIn, shuffle } from '../lib/gamify'
-import { play } from '../lib/sound'
-import { Confetti, ProgressBar } from '../components'
-import { pickEmoji } from '../lib/emoji'
-import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse } from './Exercises'
 
 interface Item {
   key: string
@@ -19,7 +38,7 @@ interface Item {
   tiles: string[]
 }
 
-type Phase = 'teach' | 'quiz' | 'done' | 'out'
+type Phase = 'teach' | 'quiz' | 'done' | 'failed' | 'course' | 'out'
 
 const PRAISE = ['Nice!', 'Great job!', 'Correct!', 'You got it!', 'Brilliant!', 'Spot on!']
 
@@ -31,9 +50,15 @@ function findLesson(courses: Course[], id: string): { course: Course; lesson: Le
   return null
 }
 
-function toItems(exs: Exercise[]): Item[] {
-  return exs.map((ex, i) => ({ key: `${i}`, ex, tiles: ex.type === 'cloze' ? clozeTiles(ex) : [] }))
+function findUnit(courses: Course[], id: string): { course: Course; unitIndex: number } | null {
+  for (const course of courses) {
+    const unitIndex = course.units.findIndex((u) => u.id === id)
+    if (unitIndex >= 0) return { course, unitIndex }
+  }
+  return null
 }
+
+const toItem = (ex: Exercise, i: number): Item => ({ key: `${i}`, ex, tiles: ex.type === 'cloze' ? clozeTiles(ex) : [] })
 
 function correctText(ex: Exercise): string {
   switch (ex.type) {
@@ -48,38 +73,86 @@ function correctText(ex: Exercise): string {
   }
 }
 
-export default function LessonPage({ practice = false }: { practice?: boolean }) {
-  const { lessonId = '' } = useParams()
+interface Session {
+  course?: Course
+  title: string
+  emoji: string
+  cards: TeachCard[]
+  exercises: Exercise[]
+  /** Progress key this session completes (lesson id or quiz key) */
+  key?: string
+  unitIndex?: number
+}
+
+export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
+  const { lessonId = '', unitId = '' } = useParams()
   const navigate = useNavigate()
   const store = useLearn()
   const activeCourse = useActiveCourse()
-  const found = practice ? null : findLesson(store.courses, lessonId)
-  const langCode = (found?.course ?? activeCourse)?.lang
+  const tested = mode === 'quiz' || mode === 'jump'
+  const usesHearts = mode === 'lesson'
 
-  // Practice pulls a mix from lessons already done in the current course
-  const session = useMemo(() => {
-    if (!practice) return found ? { title: found.lesson.title, emoji: pickEmoji(found.lesson.emoji, found.lesson.title), cards: [...found.lesson.teach.map((text): TeachCard => ({ text })), ...(found.lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))], exercises: found.lesson.exercises } : null
+  // Build the session once per visit, not on every store change
+  const session = useMemo((): Session | null => {
+    if (mode === 'lesson') {
+      const found = findLesson(store.courses, lessonId)
+      if (!found) return null
+      const { course, lesson } = found
+      return {
+        course,
+        key: lesson.id,
+        title: lesson.title,
+        emoji: pickEmoji(lesson.emoji, lesson.title),
+        cards: [...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
+        exercises: lesson.exercises,
+      }
+    }
+    if (tested) {
+      const found = findUnit(store.courses, unitId)
+      if (!found) return null
+      const { course, unitIndex } = found
+      const unit = course.units[unitIndex]
+      return {
+        course,
+        unitIndex,
+        key: mode === 'quiz' ? quizKey(unit.id) : undefined,
+        title: mode === 'quiz' ? `${unit.title} quiz` : `Jump to ${unit.title}`,
+        emoji: mode === 'quiz' ? '🏆' : '⏭️',
+        cards: [],
+        exercises: mode === 'quiz' ? unitQuizExercises(course, unitIndex) : jumpTestExercises(course, unitIndex),
+      }
+    }
     if (!activeCourse) return null
     const lessons = flatLessons(activeCourse)
     const done = lessons.filter((l) => store.progress[l.id]?.completions)
     const pool = (done.length ? done : lessons.slice(0, 1)).flatMap((l) => l.exercises)
-    return { title: 'Practice', emoji: '💪', cards: [] as TeachCard[], exercises: shuffle(pool).slice(0, 8) }
-    // Build the session once per visit, not on every store change
+    return { course: activeCourse, title: 'Practice', emoji: '💪', cards: [], exercises: shuffle(pool).slice(0, 8) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [practice, lessonId])
+  }, [mode, lessonId, unitId])
 
-  const [queue, setQueue] = useState<Item[]>(() => toItems(session?.exercises ?? []))
+  const gloss = useMemo(() => buildGlossary(session?.course), [session])
+  const langCode = session?.course?.lang
   const total = session?.exercises.length ?? 0
-  const [phase, setPhase] = useState<Phase>(() => (!practice && store.hearts <= 0 ? 'out' : session?.cards.length ? 'teach' : 'quiz'))
+
+  // A lesson paused when hearts ran out picks up where it stopped
+  const [resume] = useState(() => (mode === 'lesson' ? loadPause(lessonId) : null))
+  const [queue, setQueue] = useState<Item[]>(() => {
+    const exs = session?.exercises ?? []
+    if (resume) return resume.remaining.filter((i) => exs[i]).map((i) => toItem(exs[i], i))
+    return exs.map(toItem)
+  })
+  const [phase, setPhase] = useState<Phase>(() =>
+    usesHearts && store.hearts <= 0 ? 'out' : resume || !session?.cards.length ? 'quiz' : 'teach',
+  )
   const [teachIdx, setTeachIdx] = useState(0)
   const [idx, setIdx] = useState(0)
   const [choice, setChoice] = useState<number | null>(null)
   const [result, setResult] = useState<{ correct: boolean; note?: string } | null>(null)
-  const [solved, setSolved] = useState(0)
-  const [firstTry, setFirstTry] = useState(0)
-  const [missed, setMissed] = useState<Set<string>>(new Set())
-  const [startedAt] = useState(Date.now())
-  const [earned, setEarned] = useState({ xp: 0, accuracy: 0, secs: 0 })
+  const [solved, setSolved] = useState(resume?.solved ?? 0)
+  const [firstTry, setFirstTry] = useState(resume?.firstTry ?? 0)
+  const [missed, setMissed] = useState<Set<string>>(() => new Set((resume?.missed ?? []).map(String)))
+  const [startedAt] = useState(resume?.startedAt ?? Date.now())
+  const [earned, setEarned] = useState({ xp: 0, accuracy: 0, secs: 0, correct: 0 })
   const [quitAsk, setQuitAsk] = useState(false)
 
   const item = queue[idx]
@@ -88,39 +161,54 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
     (firstTryCount: number) => {
       const accuracy = total ? firstTryCount / total : 1
       const secs = Math.round((Date.now() - startedAt) / 1000)
-      if (practice) {
-        const xp = 5
-        store.finishPractice(xp)
-        setEarned({ xp, accuracy, secs })
-      } else if (found) {
-        const xp = lessonXp(accuracy, !!store.progress[found.lesson.id]?.completions)
-        store.completeLesson(found.lesson.id, accuracy, xp)
-        setEarned({ xp, accuracy, secs })
+      const result = { accuracy, secs, correct: firstTryCount }
+      if (tested && firstTryCount < passMark(total)) {
+        play(store.sound, 'wrong')
+        setEarned({ ...result, xp: 0 })
+        return setPhase('failed')
       }
+      let xp = 0
+      if (mode === 'practice') {
+        xp = 5
+        store.finishPractice(xp)
+      } else if (mode === 'quiz' && session?.key) {
+        xp = store.progress[session.key]?.completions ? 5 : 15
+        store.completeLesson(session.key, accuracy, xp)
+      } else if (mode === 'jump' && session?.course && session.unitIndex !== undefined) {
+        store.skipSteps(stepsBeforeUnit(session.course, session.unitIndex))
+      } else if (session?.key) {
+        xp = lessonXp(accuracy, !!store.progress[session.key]?.completions)
+        store.completeLesson(session.key, accuracy, xp)
+        clearPause()
+      }
+      setEarned({ ...result, xp })
       play(store.sound, 'complete')
       setPhase('done')
     },
-    [found, practice, startedAt, store, total],
+    [mode, session, startedAt, store, tested, total],
   )
 
   const grade = useCallback(
     (correct: boolean) => {
       if (!item) return
       const ex = item.ex
+      const note = ex.type !== 'match' ? ex.explanation : undefined
       play(store.sound, correct ? 'correct' : 'wrong')
+      // Lessons only count a question once it's right; tests count every answer
+      if (correct || tested) setSolved((n) => n + 1)
       if (correct) {
-        setSolved((n) => n + 1)
         if (!missed.has(item.key)) setFirstTry((n) => n + 1)
-        setResult({ correct: true, note: ex.type !== 'match' ? ex.explanation : undefined })
-      } else {
-        setMissed((m) => new Set(m).add(item.key))
-        // Wrong answers come back at the end, like Duolingo
-        setQueue((q) => [...q, { ...item, tiles: item.ex.type === 'cloze' ? clozeTiles(item.ex) : [] }])
-        if (!practice) store.loseHeart()
-        setResult({ correct: false, note: ex.type !== 'match' ? ex.explanation : undefined })
+        return setResult({ correct: true, note })
       }
+      setMissed((m) => new Set(m).add(item.key))
+      if (!tested) {
+        // Wrong answers come back at the end, like Duolingo. Tests ask each question once.
+        setQueue((q) => [...q, toItem(item.ex, Number(item.key))])
+      }
+      if (usesHearts) store.loseHeart()
+      setResult({ correct: false, note })
     },
-    [item, missed, practice, store],
+    [item, missed, store, tested, usesHearts],
   )
 
   const check = useCallback(() => {
@@ -134,16 +222,37 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
   const next = useCallback(() => {
     setResult(null)
     setChoice(null)
-    if (!practice && useLearn.getState().hearts <= 0) return setPhase('out')
+    if (usesHearts && useLearn.getState().hearts <= 0) {
+      // Remember the spot so practising to refill doesn't mean starting again
+      savePause({
+        lessonId,
+        remaining: queue.slice(idx + 1).map((q) => Number(q.key)),
+        solved,
+        firstTry,
+        missed: [...missed].map(Number),
+        startedAt,
+      })
+      return setPhase('out')
+    }
     if (idx + 1 >= queue.length) return finish(firstTry)
     setIdx(idx + 1)
-  }, [finish, firstTry, idx, practice, queue.length])
+  }, [finish, firstTry, idx, lessonId, missed, queue, solved, startedAt, usesHearts])
+
+  const goTeach = useCallback(
+    (step: number) => {
+      const to = teachIdx + step
+      if (to < 0) return
+      if (to >= (session?.cards.length ?? 0)) return setPhase('quiz')
+      setTeachIdx(to)
+    },
+    [session, teachIdx],
+  )
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (phase === 'teach' && e.key === 'Enter') {
-        if (teachIdx + 1 < (session?.cards.length ?? 0)) setTeachIdx(teachIdx + 1)
-        else setPhase('quiz')
+      if (phase === 'teach') {
+        if (e.key === 'Enter' || e.key === 'ArrowRight') goTeach(1)
+        if (e.key === 'ArrowLeft') goTeach(-1)
       }
       if (phase !== 'quiz' || !item) return
       if (e.key === 'Enter') result ? next() : check()
@@ -155,17 +264,93 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [check, item, next, phase, result, session, teachIdx])
+  }, [check, goTeach, item, next, phase, result])
 
-  if (!session || (!practice && !found) || total === 0) return <Navigate to="/" replace />
+  if (!session || total === 0) return <Navigate to={tested ? '/path' : '/'} replace />
 
-  const progressValue = phase === 'done' ? 1 : solved / total
+  const course = session.course
+  const progressValue = phase === 'done' || phase === 'course' ? 1 : solved / total
   const quit = () => (phase === 'quiz' && solved > 0 ? setQuitAsk(true) : navigate('/path'))
+  const paused = mode === 'practice' ? loadPause() : null
+
+  const afterDone = () => {
+    const state = useLearn.getState()
+    if (paused) return navigate(`/lesson/${paused.lessonId}`)
+    if (course && mode !== 'practice' && isCourseComplete(course, state.progress) && !(state.archived ?? []).includes(course.id)) return setPhase('course')
+    navigate('/path')
+  }
+
+  if (phase === 'course' && course) {
+    const lessons = flatLessons(course).length
+    return (
+      <div className="lesson done-screen">
+        <Confetti />
+        <div className="done-inner">
+          <div className="done-mascot">🏆</div>
+          <h1>Course complete!</h1>
+          <p className="muted">
+            You finished every lesson and quiz in {course.emoji} {course.title}.
+          </p>
+          <div className="done-stats two">
+            <div className="done-stat green">
+              <span>Lessons</span>
+              <strong>📚 {lessons}</strong>
+            </div>
+            <div className="done-stat blue">
+              <span>Units</span>
+              <strong>🗺️ {course.units.length}</strong>
+            </div>
+          </div>
+          <p className="small muted">Archive it to keep your courses list tidy. You can bring it back any time.</p>
+        </div>
+        <footer className="check-bar">
+          <div className="check-inner stack-buttons">
+            <button className="btn ghost" onClick={() => navigate('/')}>
+              Keep in my courses
+            </button>
+            <button
+              className="btn green"
+              autoFocus
+              onClick={() => {
+                store.archiveCourse(course.id)
+                navigate('/courses')
+              }}
+            >
+              📦 Add to archive
+            </button>
+          </div>
+        </footer>
+      </div>
+    )
+  }
+
+  if (phase === 'failed') {
+    const need = passMark(total)
+    return (
+      <div className="lesson out-screen">
+        <div className="done-inner">
+          <div className="done-mascot">{mode === 'quiz' ? '📝' : '⏭️'}</div>
+          <h1>Not quite</h1>
+          <p className="muted">
+            You got {earned.correct} of {total}. You need {need} to pass{mode === 'jump' ? ' and jump ahead' : ''}.
+          </p>
+          <div className="stack">
+            <button className="btn blue wide" onClick={() => navigate(`/${mode}/${unitId}`, { state: { retry: Date.now() } })}>
+              Try again
+            </button>
+            <Link to="/path" className="btn ghost wide">
+              Back to the path
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (phase === 'done') {
-    const course = found?.course ?? activeCourse
     const cp = course ? courseProgress(course, useLearn.getState().progress) : null
     const streak = liveStreak(store.streak, store.lastActiveDay, dayKey())
+    const heading = { lesson: 'Lesson complete!', practice: 'Practice complete!', quiz: 'Quiz passed!', jump: 'You jumped ahead!' }[mode]
     return (
       <div className="lesson done-screen">
         <Confetti />
@@ -178,8 +363,13 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
               <line key={i} className="dc-spark" x1="60" y1="2" x2="60" y2="12" transform={`rotate(${i * 45} 60 60)`} style={{ animationDelay: `${0.7 + (i % 2) * 0.08}s` }} />
             ))}
           </svg>
-          <h1>{practice ? 'Practice complete!' : 'Lesson complete!'}</h1>
-          {practice && <p className="muted">Hearts refilled ❤️ ×{MAX_HEARTS}</p>}
+          <h1>{heading}</h1>
+          {mode === 'practice' && <p className="muted">Hearts refilled ❤️ ×{MAX_HEARTS}</p>}
+          {tested && (
+            <p className="muted">
+              {earned.correct} of {total} correct.{mode === 'jump' ? ' Earlier lessons are marked as done.' : ''}
+            </p>
+          )}
           <div className="done-stats">
             <div className="done-stat gold">
               <span>Total XP</span>
@@ -197,11 +387,11 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
             </div>
           </div>
           <p className="streak-line">🔥 {streak} day streak</p>
-          {cp && (
+          {cp && course && (
             <div className="done-course">
               <div className="row-between small">
                 <span>
-                  {course!.emoji} {course!.title}
+                  {course.emoji} {course.title}
                 </span>
                 <strong>{Math.round(cp.ratio * 100)}%</strong>
               </div>
@@ -212,8 +402,8 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
         <footer className="check-bar">
           <div className="check-inner">
             <span />
-            <button className="btn green" autoFocus onClick={() => navigate('/path')}>
-              Continue
+            <button className="btn green" autoFocus onClick={afterDone}>
+              {paused ? 'Back to your lesson' : 'Continue'}
             </button>
           </div>
         </footer>
@@ -223,18 +413,22 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
 
   if (phase === 'out') {
     const mins = Math.ceil(nextHeartIn(store.hearts, store.heartsUpdatedAt, Date.now()) / 60000)
+    const hasPause = !!loadPause(lessonId)
     return (
       <div className="lesson out-screen">
         <div className="done-inner">
           <div className="done-mascot">💔</div>
           <h1>You ran out of hearts</h1>
-          <p className="muted">Practise what you've learned to refill them, or wait {mins} min for the next one.</p>
+          <p className="muted">
+            Do a quick practice to refill them, or wait {mins} min for the next one.
+            {hasPause ? ' Your place in this lesson is saved, so you will carry on from the same question.' : ''}
+          </p>
           <div className="stack">
             <button className="btn blue wide" onClick={() => navigate('/practice')}>
               💪 Practise to refill
             </button>
             <Link to="/path" className="btn ghost wide">
-              No thanks
+              Not now
             </Link>
           </div>
         </div>
@@ -242,130 +436,166 @@ export default function LessonPage({ practice = false }: { practice?: boolean })
     )
   }
 
+  const card = session.cards[teachIdx]
   return (
-    <div className="lesson">
-      <header className="lesson-top">
-        <button className="icon-btn" onClick={quit} aria-label="Quit lesson">
-          ✕
-        </button>
-        <ProgressBar value={progressValue} label="Lesson progress" />
-        <span className={`stat hearts ${practice ? 'muted' : ''}`}>{practice ? '♾️' : `❤️ ${store.hearts}`}</span>
-      </header>
+    <GlossContext.Provider value={gloss}>
+      <div className="lesson">
+        <header className="lesson-top">
+          <button className="icon-btn" onClick={quit} aria-label="Quit">
+            ✕
+          </button>
+          <ProgressBar value={progressValue} label="Progress" />
+          <span className={`stat hearts ${usesHearts ? '' : 'muted'}`}>{usesHearts ? `❤️ ${store.hearts}` : tested ? `${session.emoji}` : '♾️'}</span>
+        </header>
 
-      <main className="lesson-body">
-        {phase === 'teach' && (
-          <div className="teach">
-            <div className="teach-label">💡 Learn · {session.title}</div>
-            <div className="teach-body">
-              <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
-                {session.emoji}
+        <main className="lesson-body">
+          {tested && phase === 'quiz' && (
+            <div className="test-tag">
+              {session.title} · pass with {passMark(total)} of {total}
+            </div>
+          )}
+          {phase === 'teach' && card && (
+            <div className="teach">
+              <div className="teach-label">💡 Learn · {session.title}</div>
+              <div className="teach-body">
+                <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
+                  {session.emoji}
+                </div>
+                <div key={teachIdx} className={`teach-card pop ${card.phrase ? 'phrase-card' : ''}`}>
+                  {card.phrase ? (
+                    <>
+                      <div className="phrase-text">
+                        <RichText text={card.phrase.text} />
+                      </div>
+                      {card.phrase.say && <div className="phrase-say">{card.phrase.say}</div>}
+                      <div className="phrase-meaning">{card.phrase.meaning}</div>
+                      {card.phrase.words && card.phrase.words.length > 1 && (
+                        <div className="word-breakdown" aria-label="Word by word">
+                          {card.phrase.words.map((w, i) => (
+                            <span key={i} className="wb-item">
+                              <span className="wb-word">{w.w}</span>
+                              <span className="wb-meaning">{w.m}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <SpeakButton text={card.phrase.text} lang={langCode} big />
+                    </>
+                  ) : (
+                    <RichText text={card.text ?? ''} hints={false} />
+                  )}
+                </div>
+                <div className="dots">
+                  {session.cards.map((_, i) => (
+                    <span key={i} className={i <= teachIdx ? 'on' : ''} />
+                  ))}
+                </div>
               </div>
-              {(() => {
-                const card = session.cards[teachIdx]
-                return (
-                  <div key={teachIdx} className={`teach-card pop ${card.phrase ? 'phrase-card' : ''}`}>
-                    {card.phrase ? (
-                      <>
-                        <div className="phrase-text">{card.phrase.text}</div>
-                        {card.phrase.say && <div className="phrase-say">{card.phrase.say}</div>}
-                        <div className="phrase-meaning">{card.phrase.meaning}</div>
-                        <SpeakButton text={card.phrase.text} lang={langCode} big />
-                      </>
-                    ) : (
-                      card.text
+            </div>
+          )}
+          {phase === 'quiz' && item && (
+            <div key={`${idx}-${item.key}`} className="pop">
+              {missed.has(item.key) && !result && !tested && <div className="retry-tag">↻ Previous mistake</div>}
+              {item.ex.type === 'mcq' && (
+                <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />
+              )}
+              {item.ex.type === 'tf' && (
+                <TrueFalse ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? (item.ex.answer ? 0 : 1) : undefined} />
+              )}
+              {item.ex.type === 'cloze' && <Cloze ex={item.ex} tiles={item.tiles} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} />}
+              {item.ex.type === 'match' && (
+                <Match
+                  ex={item.ex}
+                  onTap={(ok) => play(store.sound, ok ? 'tap' : 'wrong')}
+                  onDone={(mistakes) => {
+                    if (tested && mistakes) {
+                      // In a test a slip counts as a wrong answer
+                      setMissed((m) => new Set(m).add(item.key))
+                      setSolved((n) => n + 1)
+                      play(store.sound, 'wrong')
+                      return setResult({ correct: false, note: `All matched, with ${mistakes} slip${mistakes > 1 ? 's' : ''}.` })
+                    }
+                    if (mistakes) setMissed((m) => new Set(m).add(item.key))
+                    play(store.sound, 'correct')
+                    setSolved((n) => n + 1)
+                    if (!mistakes && !missed.has(item.key)) setFirstTry((n) => n + 1)
+                    setResult({ correct: true, note: mistakes ? `All matched, with ${mistakes} slip${mistakes > 1 ? 's' : ''}.` : 'Every pair first time!' })
+                  }}
+                />
+              )}
+            </div>
+          )}
+        </main>
+
+        <footer className={`check-bar ${result ? (result.correct ? 'right' : 'wrong') : ''}`}>
+          <div className="check-inner">
+            {phase === 'teach' ? (
+              <>
+                <div className="teach-nav">
+                  <button className="btn ghost" disabled={teachIdx === 0} onClick={() => goTeach(-1)}>
+                    ← Back
+                  </button>
+                  <button className="btn ghost" onClick={() => setPhase('quiz')}>
+                    Skip
+                  </button>
+                </div>
+                <button className="btn green" onClick={() => goTeach(1)}>
+                  {teachIdx + 1 < session.cards.length ? 'Next' : "Let's go"}
+                </button>
+              </>
+            ) : result ? (
+              <>
+                <div className="feedback">
+                  <div className="feedback-icon">{result.correct ? '✓' : '✕'}</div>
+                  <div>
+                    <strong>{result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not quite'}</strong>
+                    {!result.correct && item && correctText(item.ex) && <p>Correct answer: {plainText(correctText(item.ex))}</p>}
+                    {result.note && (
+                      <p className="note">
+                        <RichText text={result.note} hints={false} />
+                      </p>
                     )}
                   </div>
-                )
-              })()}
-              <div className="dots">
-                {session.cards.map((_, i) => (
-                  <span key={i} className={i <= teachIdx ? 'on' : ''} />
-                ))}
-              </div>
+                </div>
+                <button className={`btn ${result.correct ? 'green' : 'red'}`} autoFocus onClick={next}>
+                  Continue
+                </button>
+              </>
+            ) : (
+              <>
+                <span />
+                {item?.ex.type !== 'match' && (
+                  <button className="btn green" disabled={choice === null} onClick={check}>
+                    Check
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </footer>
+
+        {quitAsk && (
+          <div className="modal-bg" onClick={() => setQuitAsk(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="big-emoji">⏸️</div>
+              <h2>{tested ? 'End this quiz?' : 'End this lesson?'}</h2>
+              <p className="muted">Your answers so far won't be saved.</p>
+              <button className="btn blue wide" onClick={() => setQuitAsk(false)}>
+                Keep going
+              </button>
+              <button
+                className="btn ghost wide danger-text"
+                onClick={() => {
+                  if (mode === 'lesson') clearPause()
+                  navigate('/path')
+                }}
+              >
+                End {tested ? 'quiz' : 'lesson'}
+              </button>
             </div>
           </div>
         )}
-        {phase === 'quiz' && item && (
-          <div key={`${idx}-${item.key}`} className="pop">
-            {missed.has(item.key) && !result && <div className="retry-tag">↻ Previous mistake</div>}
-            {item.ex.type === 'mcq' && <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />}
-            {item.ex.type === 'tf' && <TrueFalse ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? (item.ex.answer ? 0 : 1) : undefined} />}
-            {item.ex.type === 'cloze' && (
-              <Cloze ex={item.ex} tiles={item.tiles} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} />
-            )}
-            {item.ex.type === 'match' && (
-              <Match
-                ex={item.ex}
-                onTap={(ok) => play(store.sound, ok ? 'tap' : 'wrong')}
-                onDone={(mistakes) => {
-                  if (mistakes) setMissed((m) => new Set(m).add(item.key))
-                  play(store.sound, 'correct')
-                  setSolved((n) => n + 1)
-                  if (!mistakes && !missed.has(item.key)) setFirstTry((n) => n + 1)
-                  setResult({ correct: true, note: mistakes ? `All matched, with ${mistakes} slip${mistakes > 1 ? 's' : ''}.` : 'Every pair first time!' })
-                }}
-              />
-            )}
-          </div>
-        )}
-      </main>
-
-      <footer className={`check-bar ${result ? (result.correct ? 'right' : 'wrong') : ''}`}>
-        <div className="check-inner">
-          {phase === 'teach' ? (
-            <>
-              <button className="btn ghost" onClick={() => setPhase('quiz')}>
-                Skip
-              </button>
-              <button
-                className="btn green"
-                onClick={() => (teachIdx + 1 < session.cards.length ? setTeachIdx(teachIdx + 1) : setPhase('quiz'))}
-              >
-                {teachIdx + 1 < session.cards.length ? 'Next' : "Let's go"}
-              </button>
-            </>
-          ) : result ? (
-            <>
-              <div className="feedback">
-                <div className="feedback-icon">{result.correct ? '✓' : '✕'}</div>
-                <div>
-                  <strong>{result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not quite'}</strong>
-                  {!result.correct && item && <p>Correct answer: {correctText(item.ex)}</p>}
-                  {result.note && <p className="note">{result.note}</p>}
-                </div>
-              </div>
-              <button className={`btn ${result.correct ? 'green' : 'red'}`} autoFocus onClick={next}>
-                Continue
-              </button>
-            </>
-          ) : (
-            <>
-              <span />
-              {item?.ex.type !== 'match' && (
-                <button className="btn green" disabled={choice === null} onClick={check}>
-                  Check
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </footer>
-
-      {quitAsk && (
-        <div className="modal-bg" onClick={() => setQuitAsk(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="big-emoji">⏸️</div>
-            <h2>End this lesson?</h2>
-            <p className="muted">Your progress in this lesson won't be saved.</p>
-            <button className="btn blue wide" onClick={() => setQuitAsk(false)}>
-              Keep learning
-            </button>
-            <button className="btn ghost wide danger-text" onClick={() => navigate('/path')}>
-              End lesson
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </GlossContext.Provider>
   )
 }

@@ -108,3 +108,90 @@ export function lessonsOn(day: string, byDay: Record<string, number>, progress: 
   const fromProgress = Object.values(progress).filter((p) => p.lastCompleted === day).length
   return Math.max(recorded, fromProgress)
 }
+
+/* ---------- unit quizzes and jumping ahead ---------- */
+
+/** Unit quizzes are stored in progress under this key, next to lesson ids */
+export const quizKey = (unitId: string) => `quiz:${unitId}`
+export const QUIZ_SIZE = 5
+export const PASS_RATE = 0.8
+
+export function passMark(questions: number): number {
+  return Math.ceil(questions * PASS_RATE)
+}
+
+/** Lessons and the quiz that closes each unit, in the order they unlock */
+export type PathStep = { kind: 'lesson'; id: string; unitIndex: number } | { kind: 'quiz'; id: string; unitIndex: number }
+
+export function pathSteps(course: Course): PathStep[] {
+  return course.units.flatMap((u, ui) => [
+    ...u.lessons.map((l): PathStep => ({ kind: 'lesson', id: l.id, unitIndex: ui })),
+    { kind: 'quiz', id: quizKey(u.id), unitIndex: ui } as PathStep,
+  ])
+}
+
+/** A step counts as done when finished; older saves without quizzes count a quiz as done once the next unit was started */
+export function stepDone(course: Course, step: PathStep, progress: Record<string, LessonProgress>): boolean {
+  if (progress[step.id]?.completions) return true
+  if (step.kind !== 'quiz') return false
+  return course.units.slice(step.unitIndex + 1).some((u) => u.lessons.some((l) => progress[l.id]?.completions))
+}
+
+export function stepUnlocked(course: Course, id: string, progress: Record<string, LessonProgress>): boolean {
+  const steps = pathSteps(course)
+  const i = steps.findIndex((s) => s.id === id)
+  if (i <= 0) return i === 0
+  return stepDone(course, steps[i - 1], progress)
+}
+
+export function nextStep(course: Course, progress: Record<string, LessonProgress>): PathStep | undefined {
+  return pathSteps(course).find((s) => !stepDone(course, s, progress))
+}
+
+export function isCourseComplete(course: Course, progress: Record<string, LessonProgress>): boolean {
+  return !nextStep(course, progress)
+}
+
+function pickRoundRobin<T>(groups: T[][], n: number, rand: () => number): T[] {
+  const pools = groups.map((g) => shuffle(g, rand)).filter((g) => g.length)
+  const out: T[] = []
+  for (let round = 0; out.length < n && pools.some((p) => p.length); round++) {
+    for (const p of shuffle(pools, rand)) {
+      if (out.length >= n) break
+      const x = p.pop()
+      if (x) out.push(x)
+    }
+  }
+  return out
+}
+
+/** End of unit quiz: questions from every lesson in the unit, plus one from the unit before */
+export function unitQuizExercises(course: Course, unitIndex: number, rand: () => number = Math.random) {
+  const unit = course.units[unitIndex]
+  const prev = course.units[unitIndex - 1]
+  const fromPrev = prev ? pickRoundRobin(prev.lessons.map((l) => l.exercises), 1, rand) : []
+  const fromUnit = pickRoundRobin(
+    unit.lessons.map((l) => l.exercises),
+    QUIZ_SIZE - fromPrev.length,
+    rand,
+  )
+  return shuffle([...fromUnit, ...fromPrev], rand)
+}
+
+/** Jump ahead test: questions drawn from every unit being skipped */
+export function jumpTestExercises(course: Course, toUnitIndex: number, rand: () => number = Math.random) {
+  const skipped = course.units.slice(0, toUnitIndex)
+  const n = Math.min(10, Math.max(QUIZ_SIZE, skipped.length * 3))
+  return pickRoundRobin(
+    skipped.flatMap((u) => u.lessons.map((l) => l.exercises)),
+    n,
+    rand,
+  )
+}
+
+/** Everything before a unit, for marking as done after passing a jump test */
+export function stepsBeforeUnit(course: Course, unitIndex: number): string[] {
+  return pathSteps(course)
+    .filter((s) => s.unitIndex < unitIndex)
+    .map((s) => s.id)
+}
