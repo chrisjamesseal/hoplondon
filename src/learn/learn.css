@@ -791,3 +791,6 @@ button:disabled { cursor: default; }
 .feedback .note { margin-top: 10px; padding-top: 10px; border-top: 2px solid currentColor; border-top-color: color-mix(in srgb, currentColor 25%, transparent); opacity: 1; }
 .feedback .fb-why { display: block; font-size: 15px; font-weight: 600; line-height: 1.45; color: var(--text); opacity: 0.9; }
 .feedback .fb-why .em { color: var(--text); }
+.lesson.typing .check-bar.right .check-inner, .lesson.typing .check-bar.wrong .check-inner { flex-direction: column; align-items: stretch; gap: 12px; }
+.lesson.typing .check-bar.right .check-inner .btn, .lesson.typing .check-bar.wrong .check-inner .btn { flex: none; width: 100%; }
+.lesson.typing .check-bar.right, .lesson.typing .check-bar.wrong { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
