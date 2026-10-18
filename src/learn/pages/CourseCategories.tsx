@@ -1,12 +1,16 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useLearn } from '../store'
+import { useActiveCourse, useLearn } from '../store'
 import { courseProgress } from '../lib/gamify'
 import { groupByCategory } from '../lib/categorise'
 import { Card, ProgressBar } from '../components'
+import { ragOf } from '../lib/rag'
+import { titleCase } from '../lib/titleCase'
 
 export default function CourseCategories() {
   const { courses, progress, archived } = useLearn()
   const navigate = useNavigate()
+  const active = useActiveCourse()
+  const activeCp = active ? courseProgress(active, progress) : null
   const archivedIds = archived ?? []
   const groups = groupByCategory(courses)
 
@@ -31,6 +35,27 @@ export default function CourseCategories() {
           </Link>
         </Card>
       ) : (
+        <>
+        {active && activeCp && (
+          <Card className="course-row active">
+            <button className="course-row-main" onClick={() => navigate('/')}>
+              <span className="course-emoji">{active.emoji}</span>
+              <div className="grow">
+                <div className="row-between">
+                  <strong>{titleCase(active.title)}</strong>
+                  <span className="pill">Learning</span>
+                </div>
+                <div className="tiny muted">
+                  {active.units.length} units · {activeCp.total} lessons
+                </div>
+                <div className="row-between tiny">
+                  <ProgressBar value={activeCp.ratio} color={ragOf(activeCp.ratio)} height={10} label={`${active.title} progress`} />
+                  <span className={`pct rag-text ${ragOf(activeCp.ratio)}`}>{Math.round(activeCp.ratio * 100)}%</span>
+                </div>
+              </div>
+            </button>
+          </Card>
+        )}
         <div className="cat-grid">
           {groups.map(({ category, courses: list }) => {
             // Progress covers courses still in progress; finished ones only count if that is all there is
@@ -45,18 +70,19 @@ export default function CourseCategories() {
             )
             const ratio = totals.total ? totals.done / totals.total : 0
             return (
-              <button key={category.id} className="cat-tile" onClick={() => navigate(`/courses/${category.id}`)}>
+              <button key={category.id} className={`cat-tile rag-${ragOf(ratio)}`} onClick={() => navigate(`/courses/${category.id}`)}>
                 <span className="cat-emoji">{category.emoji}</span>
                 <strong className="cat-name">{category.label}</strong>
                 <span className="tiny muted cat-count">
                   {list.length} {list.length === 1 ? 'course' : 'courses'}
                 </span>
-                <ProgressBar value={ratio} height={8} label={`${category.label} progress`} />
-                <span className="tiny cat-pct">{Math.round(ratio * 100)}%</span>
+                <ProgressBar value={ratio} color={ragOf(ratio)} height={8} label={`${category.label} progress`} />
+                <span className={`tiny cat-pct rag-text ${ragOf(ratio)}`}>{Math.round(ratio * 100)}%</span>
               </button>
             )
           })}
         </div>
+        </>
       )}
     </div>
   )

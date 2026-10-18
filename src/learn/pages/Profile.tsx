@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLearn } from '../store'
 import { dayKey, levelInfo, lessonsOn, liveStreak } from '../lib/gamify'
 import { Card, ProgressBar } from '../components'
+import { achievementStats, allAchievementStates } from '../lib/achievements'
 
 const GOALS = [
   { n: 1, label: 'Casual' },
@@ -40,7 +42,6 @@ export default function Profile() {
   const streak = liveStreak(s.streak, s.lastActiveDay, dayKey())
   const done = Object.values(s.progress).filter((p) => p.completions).length
   const crowns = Object.values(s.progress).filter((p) => p.bestAccuracy >= 1).length
-  const made = s.courses.filter((c) => c.generator !== 'demo').length
 
   const week = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -50,14 +51,7 @@ export default function Profile() {
   const weekMax = Math.max(s.dailyLessons, ...week.map((w) => w.n))
   const weekTotal = week.reduce((a, w) => a + w.n, 0)
 
-  const badges = [
-    { icon: '🐣', name: 'First Steps', desc: 'Finish a lesson', have: done, need: 1 },
-    { icon: '🔥', name: 'On Fire', desc: 'Reach a 3 day streak', have: streak, need: 3 },
-    { icon: '📅', name: 'Week Warrior', desc: 'Reach a 7 day streak', have: streak, need: 7 },
-    { icon: '👑', name: 'Perfectionist', desc: 'Ace 5 lessons with no mistakes', have: crowns, need: 5 },
-    { icon: '🧠', name: 'Scholar', desc: 'Earn 500 XP', have: s.xp, need: 500 },
-    { icon: '🛠', name: 'Creator', desc: 'Make your own course', have: made, need: 1 },
-  ]
+  const states = allAchievementStates(achievementStats(s))
 
   return (
     <div className="profile">
@@ -113,22 +107,30 @@ export default function Profile() {
       </Card>
 
       <Card>
-        <h2>Achievements</h2>
+        <div className="row-between">
+          <h2>Achievements</h2>
+          <Link to="/profile/achievements" className="small see-all">
+            See all ›
+          </Link>
+        </div>
         <div className="badges">
-          {badges.map((b) => {
-            const got = b.have >= b.need
+          {states.map(({ a, value, level, next }) => {
+            const target = next ?? a.tiers[a.tiers.length - 1]
             return (
-              <div key={b.name} className={`badge ${got ? 'got' : ''}`}>
-                <span className="badge-icon">{b.icon}</span>
+              <div key={a.id} className={`badge ${level > 0 ? 'got' : ''}`}>
+                <span className="badge-icon">{a.icon}</span>
                 <div className="grow">
                   <div className="row-between">
-                    <strong>{b.name}</strong>
-                    <span className="tiny muted">
-                      {Math.min(b.have, b.need)}/{b.need}
-                    </span>
+                    <strong>{a.name}</strong>
+                    <span className="tiny muted">{next === null ? `Level ${level} (max)` : level > 0 ? `Level ${level}` : 'Not started'}</span>
                   </div>
-                  <span className="tiny muted">{b.desc}</span>
-                  <ProgressBar value={b.have / b.need} color="gold" height={8} label={b.name} />
+                  <span className="tiny muted">{a.describe(target)}</span>
+                  <ProgressBar value={Math.min(1, value / target)} color="gold" height={8} label={a.name} />
+                  {next !== null && (
+                    <span className="tiny muted">
+                      {value.toLocaleString('en-GB')}/{next.toLocaleString('en-GB')}
+                    </span>
+                  )}
                 </div>
               </div>
             )

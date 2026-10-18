@@ -93,7 +93,8 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
           }
         })
         .filter((l) => l.exercises.length >= 2)
-      return { id: uid('u_'), title: str(ur.title) || 'Unit', emoji: emojiOf(ur.emoji), description: str(ur.description), lessons }
+      const quiz = (Array.isArray(ur.quiz) ? ur.quiz : []).map(normalizeExercise).filter((e): e is Exercise => !!e)
+      return { id: uid('u_'), title: str(ur.title) || 'Unit', emoji: emojiOf(ur.emoji), description: str(ur.description), lessons, quiz: quiz.length >= 3 ? quiz : undefined }
     })
     .filter((u) => u.lessons.length > 0)
 

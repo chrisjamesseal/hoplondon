@@ -5,6 +5,7 @@ import { Card, ProgressBar } from '../components'
 import type { Course } from '../types'
 import { titleCase } from '../lib/titleCase'
 import { categoryById, categoryOf } from '../lib/categorise'
+import { ragOf } from '../lib/rag'
 
 export default function Courses() {
   const { courses, progress, activeCourseId, setActiveCourse, archived, unarchiveCourse } = useLearn()
@@ -39,8 +40,8 @@ export default function Courses() {
               {c.units.length} units · {cp.total} lessons
             </div>
             <div className="row-between tiny">
-              <ProgressBar value={cp.ratio} height={10} label={`${c.title} progress`} />
-              <span className="pct">{Math.round(cp.ratio * 100)}%</span>
+              <ProgressBar value={cp.ratio} color={ragOf(cp.ratio)} height={10} label={`${c.title} progress`} />
+              <span className={`pct rag-text ${ragOf(cp.ratio)}`}>{Math.round(cp.ratio * 100)}%</span>
             </div>
           </div>
         </button>

@@ -1,4 +1,4 @@
-import type { Course, Lesson, LessonProgress } from '../types'
+import type { Course, Exercise, Lesson, LessonProgress } from '../types'
 
 export const MAX_HEARTS = 5
 export const HEART_REGEN_MS = 30 * 60 * 1000
@@ -165,16 +165,15 @@ function pickRoundRobin<T>(groups: T[][], n: number, rand: () => number): T[] {
   return out
 }
 
-/** End of unit quiz: questions from every lesson in the unit, plus one from the unit before */
+/** Units that came with their own fresh quiz questions use those, otherwise the lesson exercises are reused */
+const quizPool = (u: Course['units'][number]): Exercise[][] => (u.quiz && u.quiz.length >= 3 ? [u.quiz] : u.lessons.map((l) => l.exercises))
+
+/** End of unit quiz: the unit's own quiz questions when it has them, plus one from the unit before */
 export function unitQuizExercises(course: Course, unitIndex: number, rand: () => number = Math.random) {
   const unit = course.units[unitIndex]
   const prev = course.units[unitIndex - 1]
-  const fromPrev = prev ? pickRoundRobin(prev.lessons.map((l) => l.exercises), 1, rand) : []
-  const fromUnit = pickRoundRobin(
-    unit.lessons.map((l) => l.exercises),
-    QUIZ_SIZE - fromPrev.length,
-    rand,
-  )
+  const fromPrev = prev ? pickRoundRobin(quizPool(prev), 1, rand) : []
+  const fromUnit = pickRoundRobin(quizPool(unit), QUIZ_SIZE - fromPrev.length, rand)
   return shuffle([...fromUnit, ...fromPrev], rand)
 }
 
@@ -183,7 +182,7 @@ export function jumpTestExercises(course: Course, toUnitIndex: number, rand: () 
   const skipped = course.units.slice(0, toUnitIndex)
   const n = Math.min(10, Math.max(QUIZ_SIZE, skipped.length * 3))
   return pickRoundRobin(
-    skipped.flatMap((u) => u.lessons.map((l) => l.exercises)),
+    skipped.flatMap((u) => quizPool(u)),
     n,
     rand,
   )

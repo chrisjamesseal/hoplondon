@@ -141,8 +141,10 @@ export default function Create() {
           {TABS.map((t) => (
             <button key={t.id} className="tab" onClick={() => navigate(`/create/${t.id}`)}>
               <span className="tab-icon">{t.icon}</span>
-              <span className="tab-label">{t.label}</span>
-              <span className="tab-hint">{t.hint}</span>
+              <span className="tab-text">
+                <span className="tab-label">{t.label}</span>
+                <span className="tab-hint">{t.hint}</span>
+              </span>
             </button>
           ))}
         </div>

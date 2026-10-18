@@ -306,6 +306,9 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         </div>
         <footer className="check-bar">
           <div className="check-inner stack-buttons">
+            <button className="btn green" onClick={() => navigate(`/extend/${course.id}`)}>
+              🚀 Make a harder follow on
+            </button>
             <button className="btn ghost" onClick={() => navigate('/')}>
               Keep in my courses
             </button>

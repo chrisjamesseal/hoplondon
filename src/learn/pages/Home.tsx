@@ -58,6 +58,9 @@ export default function Home() {
           <div className="complete-box">
             <strong>🏆 Course Complete!</strong>
             <span className="muted small">You finished every lesson and quiz.</span>
+            <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
+              🚀 Make a harder follow on
+            </button>
             <div className="complete-actions">
               <button className="btn blue" onClick={() => navigate('/practice')}>
                 💪 Practise
@@ -76,6 +79,9 @@ export default function Home() {
             </div>
           </div>
         )}
+        <Link to="/courses" className="btn ghost wide change-course">
+          🔄 Change Course
+        </Link>
       </Card>
 
       <Card className="goal-card">

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { buildPrompt, parseCourseJson } from './claudePrompt'
+import { buildFollowOnPrompt, buildPrompt, parseCourseJson } from './claudePrompt'
+import { DEMO_COURSE } from '../demo'
 import { normalizeCourse } from './normalize'
 
 describe('buildPrompt', () => {
@@ -65,5 +66,31 @@ describe('language courses', () => {
     expect(c.units[0].lessons[0].phrases?.[0].say).toBe('OH-lah')
     const first = c.units[0].lessons[0].exercises[0]
     expect(first.type === 'mcq' && first.audio).toBe('Hola')
+  })
+})
+
+describe('harder prompts', () => {
+  it('asks for hard multiple choice and fresh unit quizzes with real examples', () => {
+    const p = buildPrompt({ kind: 'topic', topic: 'Inflation' })
+    expect(p).toContain('genuinely hard')
+    expect(p).toContain('must not be the longest')
+    expect(p).toContain('Never reword or reuse a lesson question')
+    expect(p).toContain('real world examples')
+    expect(p).toContain('"quiz"')
+  })
+})
+
+describe('buildFollowOnPrompt', () => {
+  it('lists what is covered, asks for harder new units and carries the numbering on', () => {
+    const p = buildFollowOnPrompt({ ...DEMO_COURSE, level: 1 })
+    expect(p).toContain(DEMO_COURSE.units[0].title)
+    expect(p).toContain('level 2')
+    expect(p).toContain(`Unit ${DEMO_COURSE.units.length + 1}:`)
+    expect(p).toContain('clearly harder')
+    expect(p).toContain('JSON only')
+  })
+
+  it('has no long dashes', () => {
+    expect(buildFollowOnPrompt(DEMO_COURSE)).not.toMatch(/[—–]/)
   })
 })

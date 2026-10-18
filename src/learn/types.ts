@@ -62,6 +62,8 @@ export interface Unit {
   emoji?: string
   description: string
   lessons: Lesson[]
+  /** Fresh end of unit questions, written to differ from the lesson exercises */
+  quiz?: Exercise[]
 }
 
 export interface Course {
@@ -71,6 +73,8 @@ export interface Course {
   /** Speech language code such as es-ES, for reading phrases aloud */
   lang?: string
   summary: string
+  /** 1 for the first run, 2 after a harder follow on has been added, and so on */
+  level?: number
   /** Optional general heading such as sales or youtube; worked out from the title when missing */
   category?: string
   source: { kind: SourceKind; label: string }

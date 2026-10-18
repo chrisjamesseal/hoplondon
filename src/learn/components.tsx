@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-export function ProgressBar({ value, color = 'green', height = 16, label }: { value: number; color?: 'green' | 'gold' | 'blue'; height?: number; label?: string }) {
+export function ProgressBar({ value, color = 'green', height = 16, label }: { value: number; color?: 'green' | 'gold' | 'blue' | 'red' | 'amber'; height?: number; label?: string }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100)
   return (
     <div className="pbar" style={{ height }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={label}>

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Course, LessonProgress } from './types'
+import type { Course, LessonProgress, Unit } from './types'
 import { DEMO_COURSE } from './demo'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
 import { bumpStreak, dayKey, lessonsOn, MAX_HEARTS, regenHearts } from './lib/gamify'
@@ -13,6 +13,8 @@ interface LearnState {
   xpByDay: Record<string, number>
   lessonsByDay: Record<string, number>
   streak: number
+  /** Longest streak ever reached, so streak achievements stay earned after a break */
+  bestStreak: number
   lastActiveDay: string | null
   hearts: number
   heartsUpdatedAt: number
@@ -23,6 +25,8 @@ interface LearnState {
   archived: string[]
 
   addCourse: (c: Course) => void
+  /** Adds new units to the end of a course and raises its level, keeping all progress */
+  extendCourse: (id: string, units: Unit[]) => void
   deleteCourse: (id: string) => void
   setActiveCourse: (id: string) => void
   completeLesson: (lessonId: string, accuracy: number, xp: number) => void
@@ -50,6 +54,7 @@ export const useLearn = create<LearnState>()(
       xpByDay: {},
       lessonsByDay: {},
       streak: 0,
+      bestStreak: 0,
       lastActiveDay: null,
       hearts: MAX_HEARTS,
       heartsUpdatedAt: Date.now(),
@@ -59,6 +64,12 @@ export const useLearn = create<LearnState>()(
       archived: [],
 
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
+      extendCourse: (id, units) =>
+        set((s) => ({
+          courses: s.courses.map((c) => (c.id === id ? { ...c, units: [...c.units, ...units], level: (c.level ?? 1) + 1 } : c)),
+          archived: (s.archived ?? []).filter((x) => x !== id),
+          activeCourseId: id,
+        })),
       deleteCourse: (id) =>
         set((s) => {
           const course = s.courses.find((c) => c.id === id)
@@ -90,6 +101,7 @@ export const useLearn = create<LearnState>()(
             xpByDay: { ...s.xpByDay, [today]: (s.xpByDay[today] ?? 0) + xp },
             lessonsByDay: { ...s.lessonsByDay, [today]: lessonsOn(today, s.lessonsByDay, s.progress) + 1 },
             streak: bumpStreak(s.streak, s.lastActiveDay, today),
+            bestStreak: Math.max(s.bestStreak ?? 0, bumpStreak(s.streak, s.lastActiveDay, today)),
             lastActiveDay: today,
           }
         }),
@@ -100,6 +112,7 @@ export const useLearn = create<LearnState>()(
             xp: s.xp + xp,
             xpByDay: { ...s.xpByDay, [today]: (s.xpByDay[today] ?? 0) + xp },
             streak: bumpStreak(s.streak, s.lastActiveDay, today),
+            bestStreak: Math.max(s.bestStreak ?? 0, bumpStreak(s.streak, s.lastActiveDay, today)),
             lastActiveDay: today,
             hearts: MAX_HEARTS,
             heartsUpdatedAt: Date.now(),
@@ -112,7 +125,7 @@ export const useLearn = create<LearnState>()(
           for (const id of ids) {
             if (!progress[id]?.completions) progress[id] = { completions: 1, bestAccuracy: 0, lastCompleted: today, skipped: true }
           }
-          return { progress, streak: bumpStreak(s.streak, s.lastActiveDay, today), lastActiveDay: today }
+          return { progress, streak: bumpStreak(s.streak, s.lastActiveDay, today), bestStreak: Math.max(s.bestStreak ?? 0, bumpStreak(s.streak, s.lastActiveDay, today)), lastActiveDay: today }
         }),
       archiveCourse: (id) =>
         set((s) => {
@@ -136,7 +149,7 @@ export const useLearn = create<LearnState>()(
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
       setDailyLessons: (dailyLessons) => set({ dailyLessons }),
       setSound: (sound) => set({ sound }),
-      resetProgress: () => set({ progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
+      resetProgress: () => set({ progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, bestStreak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
     }),
     {
       name: 'leap-v1',

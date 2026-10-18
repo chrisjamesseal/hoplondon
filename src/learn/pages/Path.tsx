@@ -18,9 +18,18 @@ export default function Path() {
   // Each unit gets the colour that suits its emoji best; emoji that still clash get a neutral plate
   const colours = useMemo(() => (course ? courseColours(course) : []), [course])
 
-  // Open the path at the next thing to do, not the top of the course
+  // Open the path at the next thing to do, sitting lower on screen so the steps just finished stay in view above it
   useEffect(() => {
-    const t = setTimeout(() => document.querySelector('.node.current')?.scrollIntoView({ block: 'center' }), 60)
+    const t = setTimeout(() => {
+      const el = document.querySelector('.node.current')
+      if (!el) return
+      const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0
+      const nav = document.querySelector('.side')?.getBoundingClientRect()
+      const bottom = nav && nav.top > window.innerHeight / 2 ? nav.top : window.innerHeight
+      const r = el.getBoundingClientRect()
+      const target = r.top + window.scrollY + r.height / 2 - (top + (bottom - top) * 0.68)
+      window.scrollTo({ top: Math.max(0, target) })
+    }, 60)
     return () => clearTimeout(t)
   }, [course?.id])
 

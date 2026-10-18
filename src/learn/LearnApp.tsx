@@ -9,6 +9,8 @@ import LessonPage from './pages/LessonPage'
 import Courses from './pages/Courses'
 import CourseCategories from './pages/CourseCategories'
 import Profile from './pages/Profile'
+import Achievements from './pages/Achievements'
+import ExtendCourse from './pages/ExtendCourse'
 
 const NAV = [
   { to: '/', label: 'Home', icon: '🏠' },
@@ -93,6 +95,8 @@ export default function LearnApp() {
             <Route path="/courses" element={<CourseCategories />} />
             <Route path="/courses/:cat" element={<Courses />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/profile/achievements" element={<Achievements />} />
+            <Route path="/extend/:courseId" element={<ExtendCourse />} />
           </Routes>
         </main>
       </div>

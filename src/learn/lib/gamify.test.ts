@@ -106,3 +106,14 @@ describe('unit quizzes and jumping ahead', () => {
     expect(stepsBeforeUnit(DEMO_COURSE, 1)).toEqual([...DEMO_COURSE.units[0].lessons.map((l) => l.id), quizKey(DEMO_COURSE.units[0].id)])
   })
 })
+
+describe('unit quiz questions', () => {
+  it('uses the unit\'s own quiz questions instead of lesson exercises when it has them', async () => {
+    const { unitQuizExercises } = await import('./gamify')
+    const quiz = Array.from({ length: 5 }, (_, i) => ({ type: 'tf' as const, statement: `fresh ${i}`, answer: true }))
+    const course = { ...DEMO_COURSE, units: DEMO_COURSE.units.map((u, i) => (i === 0 ? { ...u, quiz } : u)) }
+    const qs = unitQuizExercises(course, 0)
+    expect(qs).toHaveLength(5)
+    expect(qs.every((q) => q.type === 'tf' && q.statement.startsWith('fresh'))).toBe(true)
+  })
+})
