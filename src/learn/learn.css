@@ -724,3 +724,7 @@ button:disabled { cursor: default; }
 
 .path-end { display: flex; flex-direction: column; gap: 12px; align-items: stretch; text-align: center; margin: 8px 0 24px; padding: 16px; border-radius: 16px; background: color-mix(in srgb, var(--gold) 18%, var(--bg)); }
 .path-end strong { font-size: 18px; }
+
+/* no top bar: safe area room at the top, hearts in the corner of each page */
+.page { padding-top: calc(16px + env(safe-area-inset-top, 0px)); }
+.hearts-row { display: flex; justify-content: flex-end; align-items: center; font-weight: 800; font-size: 18px; color: var(--red); margin: 0 0 6px; }

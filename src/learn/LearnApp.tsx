@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { useActiveCourse, useLearn } from './store'
-import { dayKey, liveStreak } from './lib/gamify'
+import { useLearn } from './store'
 import Home from './pages/Home'
 import Path from './pages/Path'
 import Create from './pages/Create'
@@ -21,20 +20,12 @@ const NAV = [
   { to: '/profile', label: 'Profile', icon: '🐸' },
 ]
 
-export function Stats() {
-  const { streak, lastActiveDay, hearts, xp } = useLearn()
-  const course = useActiveCourse()
-  const s = liveStreak(streak, lastActiveDay, dayKey())
+/** Hearts sit at the top right of the page. Courses and Profile don't show them. */
+function HeartsRow() {
+  const hearts = useLearn((s) => s.hearts)
   return (
-    <div className="stats">
-      {course && (
-        <NavLink to="/courses" className="stat" title="Switch course">
-          <span className="stat-emoji">{course.emoji}</span>
-        </NavLink>
-      )}
-      <span className={`stat ${s ? 'streak-on' : 'muted'}`} title="Day streak">🔥 {s}</span>
-      <span className="stat xp" title="Total XP">⚡ {xp}</span>
-      <span className="stat hearts" title="Hearts">❤️ {hearts}</span>
+    <div className="hearts-row" title="Hearts">
+      ❤️ {hearts}
     </div>
   )
 }
@@ -81,13 +72,8 @@ export default function LearnApp() {
         ))}
       </nav>
       <div className="content">
-        <header className="topbar">
-          <div className="logo logo-mobile">
-            leap<span>.</span>
-          </div>
-          <Stats />
-        </header>
         <main className="page">
+          {!/^\/(courses|profile)/.test(pathname) && <HeartsRow />}
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/path" element={<Path />} />

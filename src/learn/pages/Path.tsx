@@ -23,7 +23,7 @@ export default function Path() {
     const t = setTimeout(() => {
       const el = document.querySelector('.node.current')
       if (!el) return
-      const top = document.querySelector('.topbar')?.getBoundingClientRect().bottom ?? 0
+      const top = 0
       const nav = document.querySelector('.side')?.getBoundingClientRect()
       const bottom = nav && nav.top > window.innerHeight / 2 ? nav.top : window.innerHeight
       const r = el.getBoundingClientRect()
