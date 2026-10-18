@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import { generateText, getApiKey, getModel, MODELS, setApiKey, setModel } from '../lib/claudeApi'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useJobs } from '../jobs'
+import { getApiKey, getModel, MODELS, setApiKey, setModel } from '../lib/claudeApi'
 
 export type Mode = 'auto' | 'manual'
 
@@ -23,21 +25,21 @@ interface Props {
   ready: boolean
   pdf?: File | null
   readWeb?: boolean
-  /** Called with Claude's full reply; throw to show a message */
-  onDone: (text: string) => void
+  /** Name shown on the progress banner */
+  title: string
+  /** Turns Claude's reply into a saved course and returns its id; throw to report a problem */
+  finish: (text: string) => string
   label: string
 }
 
-/** Writes the course straight from Claude using the learner's own API key */
-export default function AutoGenerate({ prompt, ready, pdf, readWeb, onDone, label }: Props) {
+/** Starts writing the course in the background with the learner's own API key */
+export default function AutoGenerate({ prompt, ready, pdf, readWeb, title, finish, label }: Props) {
+  const navigate = useNavigate()
+  const start = useJobs((s) => s.start)
   const [key, setKey] = useState(getApiKey())
   const [draft, setDraft] = useState('')
   const [model, setModelState] = useState(getModel())
-  const [busy, setBusy] = useState(false)
-  const [chars, setChars] = useState(0)
   const [error, setError] = useState('')
-  const abort = useRef<AbortController | null>(null)
-  useEffect(() => () => abort.current?.abort(), [])
 
   function saveKey() {
     const k = draft.trim()
@@ -48,19 +50,10 @@ export default function AutoGenerate({ prompt, ready, pdf, readWeb, onDone, labe
     setError('')
   }
 
-  async function run() {
+  function run() {
     setError('')
-    setBusy(true)
-    setChars(0)
-    abort.current = new AbortController()
-    try {
-      const text = await generateText({ key, prompt, pdf, readWeb, onProgress: setChars, signal: abort.current.signal })
-      onDone(text)
-    } catch (e) {
-      if (!(e instanceof DOMException && e.name === 'AbortError')) setError(e instanceof Error ? e.message : 'Something went wrong.')
-    } finally {
-      setBusy(false)
-    }
+    start(title, { key, prompt, pdf, readWeb }, finish)
+    navigate('/courses')
   }
 
   if (!key) {
@@ -95,27 +88,19 @@ export default function AutoGenerate({ prompt, ready, pdf, readWeb, onDone, labe
             role="radio"
             aria-checked={model === m.id}
             className={model === m.id ? 'active' : ''}
-            disabled={busy}
-            onClick={() => (setModel(m.id), setModelState(m.id))}
+                        onClick={() => (setModel(m.id), setModelState(m.id))}
           >
             {m.label}
           </button>
         ))}
       </div>
       <p className="tiny muted">{MODELS.find((m) => m.id === model)?.hint}</p>
-      <button className="btn green wide" disabled={!ready || busy} onClick={run}>
-        {busy ? 'Writing...' : label}
+      <button className="btn green wide" disabled={!ready} onClick={run}>
+        {label}
       </button>
-      {busy && (
-        <>
-          <p className="tiny muted">Claude is writing your course. This usually takes a minute or two. {chars > 0 ? `${Math.round(chars / 1000)}k characters so far.` : ''}</p>
-          <button className="btn ghost wide" onClick={() => abort.current?.abort()}>
-            Cancel
-          </button>
-        </>
-      )}
+      <p className="tiny muted">It writes in the background, so you can leave this page and keep using Leap.</p>
       {error && <div className="error">😬 {error}</div>}
-      {!busy && (
+      {(
         <button className="link-btn tiny" onClick={() => (setApiKey(''), setKey(''))}>
           Remove saved API key
         </button>

@@ -81,10 +81,16 @@ export default function ExtendCourse() {
       <Card>
         <ModeSwitch mode={mode} onChange={setMode} />
         {mode === 'auto' ? (
-          <AutoGenerate prompt={prompt} ready label="Add more lessons" onDone={(t) => {
+          <AutoGenerate
+            prompt={prompt}
+            ready
+            label="Add more lessons"
+            title={`Level ${level} for ${titleCase(course.title)}`}
+            finish={(t) => {
               extendCourse(course.id, normalizeCourse(parseCourseJson(t), course.source, 'claude').units)
-              navigate('/path')
-            }} />
+              return course.id
+            }}
+          />
         ) : (
         <ol className="steps">
           <li className="step">

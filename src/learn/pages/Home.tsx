@@ -93,7 +93,7 @@ export default function Home() {
         const done = unit.lessons.filter((l) => progress[l.id]?.completions).length
         const { label, name } = splitUnitTitle(unit.title)
         return (
-          <Link key={unit.id} to="/path" className="card unit-row">
+          <Link key={unit.id} to="/path" className={`card unit-row ${done === unit.lessons.length ? 'complete' : ''}`}>
             <span className="unit-row-emoji">{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
             <div className="unit-row-main">
               <div className="unit-row-head">

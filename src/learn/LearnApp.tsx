@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useLearn } from './store'
+import { useJobs } from './jobs'
 import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
 import Path from './pages/Path'
@@ -20,6 +21,51 @@ const NAV = [
   { to: '/courses', label: 'Courses', icon: '📚' },
   { to: '/profile', label: 'Profile', icon: '🐸' },
 ]
+
+/** Progress for courses being written in the background */
+function JobBanner() {
+  const { jobs, cancel, dismiss } = useJobs()
+  const setActive = useLearn((s) => s.setActiveCourse)
+  const navigate = useNavigate()
+  if (!jobs.length) return null
+  return (
+    <div className="jobs">
+      {jobs.map((j) => (
+        <div key={j.id} className={`job ${j.status}`}>
+          <div className="job-text">
+            {j.status === 'running' && <strong>⏳ Writing {j.title}</strong>}
+            {j.status === 'done' && <strong>✅ {j.title} is ready</strong>}
+            {j.status === 'error' && <strong>😬 {j.title} failed</strong>}
+            {j.status === 'running' && <span className="tiny muted">{j.chars ? `${Math.round(j.chars / 1000)}k characters so far` : 'Starting'}. Carry on, it keeps going.</span>}
+            {j.status === 'error' && <span className="tiny">{j.error}</span>}
+          </div>
+          {j.status === 'running' && (
+            <button className="btn ghost job-btn" onClick={() => cancel(j.id)}>
+              Cancel
+            </button>
+          )}
+          {j.status === 'done' && (
+            <button
+              className="btn green job-btn"
+              onClick={() => {
+                if (j.courseId) setActive(j.courseId)
+                dismiss(j.id)
+                navigate('/')
+              }}
+            >
+              Open
+            </button>
+          )}
+          {j.status !== 'running' && (
+            <button className="job-x" aria-label="Dismiss" onClick={() => dismiss(j.id)}>
+              ✕
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
 
 /** Hearts sit at the top right of the page. Courses and Profile don't show them. */
 function HeartsRow() {
@@ -76,6 +122,7 @@ export default function LearnApp() {
       </nav>
       <div className="content">
         <main className="page">
+          {!/^\/(lesson|quiz|practice|jump)/.test(pathname) && <JobBanner />}
           {!/^\/(courses|profile|create|$)/.test(pathname) && <HeartsRow />}
           <Routes>
             <Route path="/" element={<Home />} />

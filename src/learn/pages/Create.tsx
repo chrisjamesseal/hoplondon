@@ -286,9 +286,11 @@ export default function Create() {
             pdf={tab === 'pdf' ? file : null}
             readWeb={tab === 'link' && !isVideo}
             label="Generate course"
-            onDone={(t) => {
-              addCourse(normalizeCourse(parseCourseJson(t), sourceLabel(), 'claude'))
-              navigate('/')
+            title={sourceLabel().label}
+            finish={(t) => {
+              const course = normalizeCourse(parseCourseJson(t), sourceLabel(), 'claude')
+              addCourse(course)
+              return course.id
             }}
           />
         ) : (
