@@ -768,3 +768,13 @@ button:disabled { cursor: default; }
 .job-btn { min-height: 38px; padding: 6px 14px; font-size: 13px; width: auto; }
 .job-x { background: none; border: 0; color: var(--muted); font-size: 16px; padding: 6px; }
 .unit-row.complete, .unit-row.complete:hover, .unit-row.complete:focus { border-color: var(--green); }
+
+/* Written answers: fit the screen above the keyboard */
+.lesson.typing { position: fixed; left: 0; right: 0; top: var(--vvt, 0px); height: var(--vvh, 100dvh); min-height: 0; overflow: hidden; z-index: 20; background: var(--bg); }
+.lesson.typing .lesson-top { padding-top: calc(12px + env(safe-area-inset-top, 0px)); flex: none; }
+.lesson.typing .lesson-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 16px; }
+.lesson.typing .check-bar { position: static; flex: none; padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
+.lesson.typing .check-inner { flex-direction: row; align-items: center; gap: 10px; }
+.lesson.typing .check-inner .btn { flex: 1; width: auto; min-width: 0; }
+.lesson.typing .check-inner > span:empty { display: none; }
+.lesson.typing .feedback { flex: 1; min-width: 0; }

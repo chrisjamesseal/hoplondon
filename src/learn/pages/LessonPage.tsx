@@ -28,6 +28,7 @@ import { titleCase } from '../lib/titleCase'
 import { clearPause, loadPause, savePause } from '../lib/pause'
 import { Confetti, ProgressBar } from '../components'
 import { pickEmoji } from '../lib/emoji'
+import { useKeyboardFit } from '../lib/keyboard'
 import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse, Typed } from './Exercises'
 import { buildGlossary, GlossContext, plainText, RichText } from './RichText'
 
@@ -194,6 +195,8 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const [quitAsk, setQuitAsk] = useState(false)
 
   const item = queue[idx]
+  const typing = phase !== 'teach' && item?.ex.type === 'type'
+  useKeyboardFit(typing)
 
   const finish = useCallback(
     (firstTryCount: number) => {
@@ -506,7 +509,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const card = session.cards[teachIdx]
   return (
     <GlossContext.Provider value={gloss}>
-      <div className="lesson">
+      <div className={`lesson ${typing ? 'typing' : ''}`}>
         <header className="lesson-top">
           <button className="icon-btn" onClick={quit} aria-label="Quit">
             ✕

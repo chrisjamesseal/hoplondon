@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ClozeExercise, MatchExercise, McqExercise, TrueFalseExercise, TypeExercise } from '../types'
 import { shuffle } from '../lib/gamify'
@@ -195,6 +195,13 @@ export function Typed({
   right?: boolean
 }) {
   const given = ex.answer.slice(0, letters)
+  const inputRef = useRef<HTMLInputElement>(null)
+  // Open the keyboard straight away for each new written question, without scrolling the page
+  useEffect(() => {
+    if (locked) return
+    const t = setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 50)
+    return () => clearTimeout(t)
+  }, [ex, locked])
   const [lead, ...rest] = ex.prompt.split('\n\n')
   return (
     <div className="ex">
@@ -205,6 +212,7 @@ export function Typed({
       <div className={`type-row ${right === undefined ? '' : right ? 'is-right' : 'is-wrong'}`}>
         <span className="type-given">{given}</span>
         <input
+          ref={inputRef}
           className="type-input"
           value={value}
           onChange={(e) => onChange(e.target.value)}
