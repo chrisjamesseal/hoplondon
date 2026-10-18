@@ -77,7 +77,6 @@ export default function CourseCategories() {
                   {list.length} {list.length === 1 ? 'course' : 'courses'}
                 </span>
                 <ProgressBar value={ratio} color={ragOf(ratio)} height={8} label={`${category.label} progress`} />
-                <span className={`tiny cat-pct rag-text ${ragOf(ratio)}`}>{Math.round(ratio * 100)}%</span>
               </button>
             )
           })}
