@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useLearn } from './store'
+import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
 import Path from './pages/Path'
 import Create from './pages/Create'
@@ -23,9 +24,11 @@ const NAV = [
 /** Hearts sit at the top right of the page. Courses and Profile don't show them. */
 function HeartsRow() {
   const hearts = useLearn((s) => s.hearts)
+  const streak = useLearn((s) => liveStreak(s.streak, s.lastActiveDay, dayKey()))
   return (
-    <div className="hearts-row" title="Hearts">
-      ❤️ {hearts}
+    <div className="hearts-row">
+      <span title="Streak" className="streak-chip">🔥 {streak}</span>
+      <span title="Hearts">❤️ {hearts}</span>
     </div>
   )
 }

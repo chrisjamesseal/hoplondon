@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
-import { courseProgress, dayKey, flatLessons, lessonsOn, nextStep } from '../lib/gamify'
+import { courseProgress, dayKey, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
@@ -10,6 +10,7 @@ export default function Home() {
   const course = useActiveCourse()
   const { hearts, progress, lessonsByDay, dailyLessons, archived, archiveCourse } = useLearn()
   const navigate = useNavigate()
+  const streak = liveStreak(useLearn((s) => s.streak), useLearn((s) => s.lastActiveDay), dayKey())
 
   if (!course) {
     return (
@@ -35,7 +36,10 @@ export default function Home() {
     <div className="home-page">
       <Card className="course-card">
         <div className="course-card-top">
-          <div className="card-hearts" title="Hearts">❤️ {hearts}</div>
+          <div className="card-hearts">
+            <span title="Streak" className="streak-chip">🔥 {streak}</span>
+            <span title="Hearts">❤️ {hearts}</span>
+          </div>
           <span className="course-emoji">{course.emoji}</span>
           <div>
             <h1>{titleCase(course.title)}</h1>
