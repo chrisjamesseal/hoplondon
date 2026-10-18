@@ -654,10 +654,18 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
                   <div className="feedback-icon">{result.correct ? '✓' : '✕'}</div>
                   <div>
                     <strong>{result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not Quite'}</strong>
-                    {!result.correct && item && correctText(item.ex) && <p>Correct answer: {plainText(correctText(item.ex))}</p>}
+                    {!result.correct && item && correctText(item.ex) && (
+                      <p className="fb-answer">
+                        <span className="fb-label">Correct answer</span>
+                        <span className="fb-value">{plainText(correctText(item.ex))}</span>
+                      </p>
+                    )}
                     {result.note && (
                       <p className="note">
-                        <RichText text={result.note} hints={false} />
+                        <span className="fb-label">Why</span>
+                        <span className="fb-why">
+                          <RichText text={result.note} hints={false} />
+                        </span>
                       </p>
                     )}
                   </div>
