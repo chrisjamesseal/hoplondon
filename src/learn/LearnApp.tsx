@@ -10,6 +10,7 @@ import LessonPage from './pages/LessonPage'
 import Courses from './pages/Courses'
 import CourseCategories from './pages/CourseCategories'
 import Profile from './pages/Profile'
+import RewriteCourse from './pages/RewriteCourse'
 import Gate from './pages/Gate'
 import Achievements from './pages/Achievements'
 import ExtendCourse from './pages/ExtendCourse'
@@ -133,6 +134,7 @@ export default function LearnApp() {
             <Route path="/gate/:app" element={<Gate />} />
             <Route path="/profile/achievements" element={<Achievements />} />
             <Route path="/extend/:courseId" element={<ExtendCourse />} />
+            <Route path="/rewrite/:courseId" element={<RewriteCourse />} />
           </Routes>
         </main>
       </div>

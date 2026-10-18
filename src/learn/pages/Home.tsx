@@ -112,6 +112,9 @@ export default function Home() {
       <Link to="/path" className="btn blue wide">
         🗺️ Open Lesson Path
       </Link>
+      <Link to={`/rewrite/${course.id}`} className="btn ghost wide delete-course">
+        ✏️ Rewrite course
+      </Link>
       {!isArchived && (
         <button
           className="btn ghost wide delete-course"

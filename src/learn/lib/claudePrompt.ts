@@ -280,4 +280,65 @@ Output
 ${formatFor(true)}`
 }
 
+const OUTPUT_RULES = `Output
+- Reply in this chat with the JSON only, inside a single code block.
+- Write no other text before or after it. No greeting, no notes, no explanation.
+- Do not create a file, a canvas, a download link or a table.
+- Keep the JSON compact: no indentation and no blank lines.
+- The JSON must be strictly valid and parse with JSON.parse. Check it before you send it.
+- Use only straight double quotes (") around keys and strings, never curly quotes. Inside a string use an apostrophe (') or rewrite the sentence instead of a double quote.
+- No trailing commas, no comments, no ellipsis, no placeholders and no markdown inside the code block. Each string stays on one line, with no line breaks inside it.
+- Write true and false in lowercase with no quotes, and write answer numbers as plain numbers.
+- Send the whole JSON in one reply and finish every bracket. If it would be too long, write fewer lessons rather than stopping halfway.`
+
+export const LEVEL_NAMES = ['Easy', 'Medium', 'Hard', 'Expert']
+export const levelName = (n: number): string => LEVEL_NAMES[n - 1] ?? `Level ${n}`
+
+/** Prompt that rewrites one difficulty level of a course, using the learner's notes on what to improve */
+export function buildRewritePrompt(course: Course, level: number, feedback: string): string {
+  const units = course.units.filter((u) => (u.level ?? 1) === level)
+  const current = JSON.stringify({
+    title: course.title,
+    emoji: course.emoji,
+    summary: course.summary,
+    ...(course.lang ? { lang: course.lang } : {}),
+    units: units.map((u) => ({
+      title: u.title,
+      emoji: u.emoji,
+      description: u.description,
+      quiz: u.quiz,
+      lessons: u.lessons.map((l) => ({ title: l.title, emoji: l.emoji, teach: l.teach, phrases: l.phrases, exercises: l.exercises })),
+    })),
+  })
+  const others = course.units.filter((u) => (u.level ?? 1) !== level).map((u) => `- ${u.title}`).join('\n')
+  const harder = level >= 2
+  return `You are rewriting part of a course in my learning app, Leap (it works like Duolingo). I want the ${levelName(level).toLowerCase()} level (level ${level}) of "${course.title}" rewritten and improved.
+
+What I want improved
+${feedback.trim() || 'Make it clearer, more accurate and more engaging.'}
+
+Here is the current ${levelName(level).toLowerCase()} level as JSON. Rewrite it, fixing everything I listed above and anything else that falls short of the rules below:
+
+${current}
+${others ? `\nOther levels of this course, which stay as they are, so do not repeat them:\n${others}\n` : ''}
+${RULES}
+
+Rewrite rules
+- Return the rewritten level ${level} units only, in the same order and with the same unit titles, so my progress carries over. Keep the same number of units and lessons per unit unless my notes ask otherwise.
+- Keep the same top level "title", "emoji" and "summary"${course.lang ? ` and "lang": "${course.lang}"` : ''}.
+- Keep what already works. Change what my notes ask for, and fix anything inaccurate or unclear.
+- Every unit keeps its "quiz" of fresh questions that differ from its lessons.
+${
+  harder
+    ? `- This is a harder level. Make "type" exercises the backbone: at least half of every lesson's exercises and most of each unit's "quiz" must be "type", where the learner writes the answer. The learner sees only the first letter and has a hint button, so the answer must be one word or a short phrase of up to three words with one clear correct form. List other wordings that should count in "accept", and give every "type" exercise a "hint".
+- Use "mcq" only for scenario judgement. Questions that check a fact, term, name or number must be "type".`
+    : `- This is the easy level: use "mcq", "tf", "cloze" and "match" only. Do not use "type" exercises.`
+}
+
+${OUTPUT_RULES}
+- Use exactly this format, with only the rewritten units:
+
+${formatFor(harder)}`
+}
+
 export const CLAUDE_URL = 'https://claude.ai/new'

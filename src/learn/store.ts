@@ -27,6 +27,8 @@ interface LearnState {
   addCourse: (c: Course) => void
   /** Adds new units to the end of a course and raises its level, keeping all progress */
   extendCourse: (id: string, units: Unit[]) => void
+  /** Swaps one difficulty level's units for rewritten ones, keeping progress by position */
+  replaceLevel: (id: string, level: number, units: Unit[]) => void
   deleteCourse: (id: string) => void
   setActiveCourse: (id: string) => void
   completeLesson: (lessonId: string, accuracy: number, xp: number) => void
@@ -72,6 +74,24 @@ export const useLearn = create<LearnState>()(
             return { ...c, units: [...c.units, ...units.map((u) => ({ ...u, level }))], level }
           }),
           archived: (s.archived ?? []).filter((x) => x !== id),
+          activeCourseId: id,
+        })),
+      replaceLevel: (id, level, units) =>
+        set((s) => ({
+          courses: s.courses.map((c) => {
+            if (c.id !== id) return c
+            const old = c.units.filter((u) => (u.level ?? 1) === level)
+            const first = c.units.findIndex((u) => (u.level ?? 1) === level)
+            const fresh = units.map((u, i) => ({
+              ...u,
+              id: old[i]?.id ?? u.id,
+              level,
+              lessons: u.lessons.map((l, j) => ({ ...l, id: old[i]?.lessons[j]?.id ?? l.id })),
+            }))
+            const rest = c.units.filter((u) => (u.level ?? 1) !== level)
+            const at = first < 0 ? rest.length : c.units.slice(0, first).filter((u) => (u.level ?? 1) !== level).length
+            return { ...c, units: [...rest.slice(0, at), ...fresh, ...rest.slice(at)] }
+          }),
           activeCourseId: id,
         })),
       deleteCourse: (id) =>

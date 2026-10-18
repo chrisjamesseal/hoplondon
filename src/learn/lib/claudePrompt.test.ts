@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildFollowOnPrompt, buildPrompt, parseCourseJson } from './claudePrompt'
+import { buildFollowOnPrompt, buildPrompt, buildRewritePrompt, parseCourseJson } from './claudePrompt'
 import { DEMO_COURSE } from '../demo'
 import { normalizeCourse } from './normalize'
 
@@ -120,5 +120,26 @@ describe('written answer prompts', () => {
     expect(p).toContain('hint button')
     expect(p).toContain('never an mcq')
     expect(buildPrompt({ kind: 'topic', topic: 'Bees' })).not.toContain('"type": "type"')
+  })
+})
+
+
+describe('buildRewritePrompt', () => {
+  const mk = (level: number) => ({ id: 'u' + level, title: 'Unit ' + level, description: 'd', level, lessons: [{ id: 'l' + level, title: 'L', teach: [], exercises: [{ type: 'tf', statement: 's' + level, answer: true }] }] })
+  const course = { id: 'c', title: 'Bees', emoji: '🐝', summary: 's', source: { kind: 'topic', label: 'Bees' }, generator: 'claude', createdAt: '', level: 2, units: [mk(1), mk(2)] } as never
+
+  it('rewrites only the chosen level and includes the notes', () => {
+    const p = buildRewritePrompt(course, 1, 'Make the options less obvious')
+    expect(p).toContain('Make the options less obvious')
+    expect(p).toContain('"statement":"s1"')
+    expect(p).not.toContain('"statement":"s2"')
+    expect(p).toContain('Do not use "type" exercises')
+    expect(p).not.toMatch(/[\u2014\u2013]/)
+  })
+
+  it('asks for written answers at harder levels', () => {
+    const p = buildRewritePrompt(course, 2, 'More real cases')
+    expect(p).toContain('"statement":"s2"')
+    expect(p).toContain('backbone')
   })
 })
