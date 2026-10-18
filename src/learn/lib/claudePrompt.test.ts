@@ -57,6 +57,15 @@ describe('parseCourseJson', () => {
     expect((cut as { units: unknown[] }).units.length).toBe(1)
   })
 
+  it('repairs ChatGPT style breakage: curly quotes, escaped markdown and lists without brackets', () => {
+    const broken = '{\u201Ctitle\u201D:\u201CT\u201D,\u201Cunits\u201D:\\[{"title":"U","lessons":\\[{"title":"L","teach":\\["A \\*\\*term\\*\\* here"\\],"exercises":\\[{"type":"mcq","prompt":"Q?","options":"a","b","c","answer":1},{"type":"type","prompt":"P","answer":"x","accept":"y","z"}\\]}\\]}\\]}'
+    const v = parseCourseJson(broken) as { units: { lessons: { teach: string[]; exercises: { options?: string[]; accept?: string[] }[] }[] }[] }
+    const l = v.units[0].lessons[0]
+    expect(l.teach[0]).toBe('A **term** here')
+    expect(l.exercises[0].options).toEqual(['a', 'b', 'c'])
+    expect(l.exercises[1].accept).toEqual(['y', 'z'])
+  })
+
   it('explains broken input', () => {
     expect(() => parseCourseJson('hello')).toThrow(/doesn't look like/)
     expect(() => parseCourseJson('{"title": ')).toThrow()

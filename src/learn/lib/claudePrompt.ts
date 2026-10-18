@@ -173,13 +173,51 @@ const closeOpen = (src: string): string => {
   return cut + open.reverse().join('')
 }
 
+const ARRAY_KEYS = /"(accept|options|distractors|pairs|teach)"\s*:\s*(?!\[)/g
+
+/** Wraps lists that were written without brackets, such as "options":"a","b","c" */
+const wrapBareLists = (src: string): string => {
+  let out = ''
+  let last = 0
+  ARRAY_KEYS.lastIndex = 0
+  let m: RegExpExecArray | null
+  while ((m = ARRAY_KEYS.exec(src))) {
+    const from = m.index + m[0].length
+    let i = from
+    let depth = 0
+    let inStr = false
+    for (; i < src.length; i++) {
+      const ch = src[i]
+      if (inStr) {
+        if (ch === '\\') i++
+        else if (ch === '"') inStr = false
+        continue
+      }
+      if (ch === '"') inStr = true
+      else if (ch === '{' || ch === '[') depth++
+      else if (ch === '}' || ch === ']') {
+        if (depth === 0) break
+        depth--
+      } else if (ch === ',' && depth === 0 && /^,\s*"[A-Za-z_]+"\s*:/.test(src.slice(i, i + 40))) break
+    }
+    out += src.slice(last, from) + '[' + src.slice(from, i).trim().replace(/,$/, '') + ']'
+    last = i
+    ARRAY_KEYS.lastIndex = i
+  }
+  return out + src.slice(last)
+}
+
 const tidy = (src: string): string =>
-  src
-    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/\u00A0/g, ' ')
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/,\s*([}\]])/g, '$1')
+  wrapBareLists(
+    src
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/\u00A0/g, ' ')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      // Chat apps sometimes escape markdown characters, which JSON does not allow
+      .replace(/\\([[\]*_#()<>!.+|~`-])/g, '$1')
+      .replace(/,\s*([}\]])/g, '$1'),
+  )
 
 /** Pulls the course JSON out of a file or pasted reply (tolerates code fences, extra text, curly quotes, trailing commas and cut off replies) */
 export function parseCourseJson(text: string): unknown {
