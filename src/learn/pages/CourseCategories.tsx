@@ -81,6 +81,9 @@ export default function CourseCategories() {
             )
           })}
         </div>
+        <button className="btn ghost wide archive-link" onClick={() => navigate('/courses/archive')}>
+          📦 Archive{archivedIds.length ? ` (${archivedIds.length})` : ''}
+        </button>
         </>
       )}
     </div>

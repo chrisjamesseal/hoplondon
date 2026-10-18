@@ -798,3 +798,4 @@ button:disabled { cursor: default; }
 /* Titles wrap into evenly sized lines */
 .course-row .row-between > strong { text-wrap: balance; }
 .course-row-main h1, .course-card h1, .path-title, .unit-row-main > strong, .unit-banner h2, h1 { text-wrap: balance; }
+.archive-link { margin-top: 16px; }

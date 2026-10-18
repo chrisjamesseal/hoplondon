@@ -14,7 +14,8 @@ export default function Courses() {
   const [confirmId, setConfirmId] = useState<string | null>(null)
   const archivedIds = archived ?? []
   const { cat } = useParams()
-  const category = categoryById(cat)
+  const isArchive = cat === 'archive'
+  const category = isArchive ? undefined : categoryById(cat)
   const inCategory = category ? courses.filter((c) => categoryOf(c).id === category.id) : courses
   const live = inCategory.filter((c) => !archivedIds.includes(c.id))
   const shelf = inCategory.filter((c) => archivedIds.includes(c.id))
@@ -75,16 +76,23 @@ export default function Courses() {
             ‹
           </Link>
           <h1>
-            {category ? `${category.emoji} ${category.label}` : 'My Courses'}
+            {isArchive ? '📦 Archive' : category ? `${category.emoji} ${category.label}` : 'My Courses'}
           </h1>
         </div>
-        {courses.length > 0 && (
+        {courses.length > 0 && !isArchive && (
           <Link to="/create" className="btn green small-btn">
             + New
           </Link>
         )}
       </div>
-      {live.length === 0 && (
+      {isArchive && shelf.length === 0 && (
+        <Card className="empty">
+          <div className="big-emoji">📦</div>
+          <h2>Archive is Empty</h2>
+          <p className="muted">Courses you add to the archive show up here.</p>
+        </Card>
+      )}
+      {!isArchive && live.length === 0 && (
         <Card className="empty">
           <div className="big-emoji">📚</div>
           <h2>{shelf.length ? 'Nothing in Progress' : 'No Courses Yet'}</h2>
@@ -94,11 +102,11 @@ export default function Courses() {
           </Link>
         </Card>
       )}
-      <div className="course-list">{live.map((c) => row(c, false))}</div>
+      {!isArchive && <div className="course-list">{live.map((c) => row(c, false))}</div>}
 
       {shelf.length > 0 && (
         <>
-          <h2 className="section-title">📦 Archive</h2>
+          {!isArchive && <h2 className="section-title">📦 Archive</h2>}
           <p className="tiny muted archive-note">Finished courses. Tap one to bring it back.</p>
           <div className="course-list">{shelf.map((c) => row(c, true))}</div>
         </>
