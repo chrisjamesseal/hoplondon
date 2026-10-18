@@ -9,6 +9,7 @@ import {
   flatLessons,
   isCourseComplete,
   mixTrueFalse,
+  easeIntoTyping,
   exercisesFor,
   typedMatches,
   jumpTestExercises,
@@ -141,7 +142,11 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         title: titleCase(lesson.title),
         emoji: pickEmoji(lesson.emoji, lesson.title),
         cards: [...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
-        exercises: mixTrueFalse(exercisesFor(course, course.units.find((u) => u.lessons.some((l) => l.id === lesson.id)) ?? course.units[0], lesson.exercises), lesson.id),
+        exercises: (() => {
+          const unit = course.units.find((u) => u.lessons.some((l) => l.id === lesson.id)) ?? course.units[0]
+          const eased = easeIntoTyping(course, unit, unit.lessons.findIndex((l) => l.id === lesson.id), exercisesFor(course, unit, lesson.exercises), lesson.id)
+          return mixTrueFalse(eased, lesson.id)
+        })(),
       }
     }
     if (tested) {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { lessonsOn, bumpStreak, courseProgress, HEART_REGEN_MS, isUnlocked, levelInfo, liveStreak, regenHearts, sameAnswer } from './gamify'
+import { easeIntoTyping, lessonsOn, bumpStreak, courseProgress, HEART_REGEN_MS, isUnlocked, levelInfo, liveStreak, regenHearts, sameAnswer } from './gamify'
 import { DEMO_COURSE } from '../demo'
+import type { Course, Exercise } from '../types'
 
 describe('streaks', () => {
   it('starts at 1 on first lesson', () => {
@@ -169,5 +170,30 @@ describe('written answers', () => {
     const course = { ...DEMO_COURSE, level: 2, units: [{ ...DEMO_COURSE.units[0], level: 1 }, { ...DEMO_COURSE.units[1], level: 2 }] }
     expect(exercisesFor(course, course.units[0], [mcq])[0].type).toBe('type')
     expect(exercisesFor(course, course.units[1], [mcq])[0].type).toBe('mcq')
+  })
+})
+
+
+describe('easeIntoTyping', () => {
+  const t = (a: string): Exercise => ({ type: 'type', prompt: `Q ${a}?`, answer: a })
+  const unit = (level?: number) => ({ id: 'u', title: 'U', description: '', level, lessons: [{ id: 'l0', title: 'a', teach: [], exercises: [t('alpha'), t('beta'), t('gamma'), t('delta'), { type: 'tf', statement: 's', answer: true } as Exercise] }] })
+  const course = (u: ReturnType<typeof unit>) => ({ id: 'c', title: 'C', emoji: 'x', summary: '', source: { kind: 'topic', label: 'x' }, generator: 'claude', createdAt: '', level: 2, units: [u] }) as unknown as Course
+
+  it('uses buttons only in the first lesson of a new unit', () => {
+    const u = unit(2)
+    const out = easeIntoTyping(course(u), u, 0, u.lessons[0].exercises, 's')
+    expect(out.some((e) => e.type === 'type')).toBe(false)
+    expect(out.filter((e) => e.type === 'mcq').length).toBe(4)
+  })
+
+  it('puts written answers last in later lessons', () => {
+    const u = unit(2)
+    const out = easeIntoTyping(course(u), u, 2, u.lessons[0].exercises, 's')
+    expect(out.map((e) => e.type)).toEqual(['tf', 'type', 'type', 'type', 'type'])
+  })
+
+  it('leaves review of older levels alone', () => {
+    const u = unit(1)
+    expect(easeIntoTyping(course(u), u, 0, u.lessons[0].exercises, 's')).toEqual(u.lessons[0].exercises)
   })
 })

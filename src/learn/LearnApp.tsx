@@ -33,10 +33,8 @@ function JobBanner() {
       {jobs.map((j) => (
         <div key={j.id} className={`job ${j.status}`}>
           <div className="job-text">
-            {j.status === 'running' && <strong>⏳ Writing {j.title}</strong>}
-            {j.status === 'done' && <strong>✅ {j.title} is ready</strong>}
-            {j.status === 'error' && <strong>😬 {j.title} failed</strong>}
-            {j.status === 'running' && <span className="tiny muted">{j.chars ? `${Math.round(j.chars / 1000)}k characters so far` : 'Starting'}. Carry on, it keeps going.</span>}
+            <strong>{j.status === 'running' ? '⏳ Writing' : j.status === 'done' ? '✅ Ready' : '😬 Failed'}</strong>
+            <strong className="job-title">{j.title}</strong>
             {j.status === 'error' && <span className="tiny">{j.error}</span>}
           </div>
           {j.status === 'running' && (

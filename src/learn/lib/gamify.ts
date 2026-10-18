@@ -144,6 +144,43 @@ export function exercisesFor(course: Course, unit: Course['units'][number], exer
   return (unit.level ?? 1) < (course.level ?? 1) ? exercises.map(hardenExercise) : exercises
 }
 
+/** Turns a written question into a multiple choice one, using other answers from the same unit as the wrong options */
+export function softenToMcq(ex: Extract<Exercise, { type: 'type' }>, pool: string[], seed: string): Exercise {
+  const seen = new Set([ex.answer.toLowerCase()])
+  const others: string[] = []
+  for (const a of shuffle(pool, seeded(seed))) {
+    const k = a.toLowerCase()
+    if (seen.has(k)) continue
+    seen.add(k)
+    others.push(a)
+    if (others.length === 3) break
+  }
+  if (others.length < 2) return ex
+  const options = shuffle([ex.answer, ...others], seeded(seed + 'o'))
+  return { type: 'mcq', prompt: ex.prompt, options, answer: options.indexOf(ex.answer), explanation: ex.explanation, hint: ex.hint }
+}
+
+/**
+ * New learning at a harder level should start with buttons and only move to typing later. The first
+ * lesson of a unit has no written answers, the second keeps about a third, and written answers
+ * always come after the tap questions within a lesson.
+ */
+export function easeIntoTyping(course: Course, unit: Course['units'][number], lessonIndex: number, exercises: Exercise[], seed: string): Exercise[] {
+  if ((unit.level ?? 1) < (course.level ?? 1)) return exercises
+  const typed = exercises.filter((e) => e.type === 'type').length
+  if (!typed) return exercises
+  const keep = lessonIndex <= 0 ? 0 : lessonIndex === 1 ? Math.floor(exercises.length / 3) : typed
+  const pool = [...unit.lessons.flatMap((l) => l.exercises), ...(unit.quiz ?? [])].flatMap((e) => (e.type === 'type' || e.type === 'cloze' ? [e.answer] : []))
+  let seen = 0
+  const eased = exercises.map((e) => {
+    if (e.type !== 'type') return e
+    seen++
+    return typed - seen < keep ? e : softenToMcq(e, pool, seed + seen)
+  })
+  // Taps first, writing last
+  return [...eased.filter((e) => e.type !== 'type'), ...eased.filter((e) => e.type === 'type')]
+}
+
 /** Lenient answer comparison: ignores case, punctuation and extra spaces */
 export function sameAnswer(a: string, b: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()

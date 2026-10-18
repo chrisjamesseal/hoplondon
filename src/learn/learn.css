@@ -778,3 +778,4 @@ button:disabled { cursor: default; }
 .lesson.typing .check-inner .btn { flex: 1; width: auto; min-width: 0; }
 .lesson.typing .check-inner > span:empty { display: none; }
 .lesson.typing .feedback { flex: 1; min-width: 0; }
+.job-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
