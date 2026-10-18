@@ -6,6 +6,8 @@ import { buildLanguageCourse, languageLabel, LANGUAGES } from '../lib/phrasebook
 import { cleanTranscript, isYouTubeUrl, MAX_TRANSCRIPT_CHARS, normaliseUrl } from '../lib/extract'
 import { normalizeCourse } from '../lib/normalize'
 import { buildPrompt, CLAUDE_URL, parseCourseJson, type PromptSource } from '../lib/claudePrompt'
+import AutoGenerate, { ModeSwitch, type Mode } from './AutoGenerate'
+import { getApiKey } from '../lib/claudeApi'
 import type { SourceKind } from '../types'
 
 type Tab = 'pdf' | 'topic' | 'link' | 'language'
@@ -48,6 +50,7 @@ export default function Create() {
   const [transcript, setTranscript] = useState('')
   const [langId, setLangId] = useState('')
   const [drag, setDrag] = useState(false)
+  const [mode, setMode] = useState<Mode>(getApiKey() ? 'auto' : 'manual')
   const [error, setError] = useState('')
   const [copied, setCopied] = useState<'ok' | 'manual' | null>(null)
   const [pasted, setPasted] = useState('')
@@ -274,6 +277,21 @@ export default function Create() {
             Start course
           </button>
         ) : (
+        <>
+        <ModeSwitch mode={mode} onChange={setMode} />
+        {mode === 'auto' ? (
+          <AutoGenerate
+            prompt={prompt}
+            ready={promptReady && !!prompt}
+            pdf={tab === 'pdf' ? file : null}
+            readWeb={tab === 'link' && !isVideo}
+            label="Generate course"
+            onDone={(t) => {
+              addCourse(normalizeCourse(parseCourseJson(t), sourceLabel(), 'claude'))
+              navigate('/')
+            }}
+          />
+        ) : (
         <ol className="steps">
             <li className="step">
               <span className="step-num">1</span>
@@ -343,6 +361,8 @@ export default function Create() {
               </div>
             </li>
         </ol>
+        )}
+        </>
         )}
       </Card>
     </div>

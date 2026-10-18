@@ -745,3 +745,10 @@ button:disabled { cursor: default; }
 .btn { white-space: nowrap; }
 .btn .btn-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .btn { max-width: 100%; }
+
+/* Auto generate with an API key */
+.mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+.mode-switch button { min-height: 46px; border-radius: 14px; border: 2px solid var(--border); background: var(--surface); color: var(--muted); font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px; font-size: 14px; box-shadow: 0 3px 0 var(--border); }
+.mode-switch button.active { border-color: var(--blue); background: var(--blue-soft); color: var(--text); box-shadow: 0 3px 0 var(--blue); }
+.auto-box { display: flex; flex-direction: column; gap: 10px; }
+.link-btn { background: none; border: 0; color: var(--muted); text-decoration: underline; padding: 6px; align-self: center; }

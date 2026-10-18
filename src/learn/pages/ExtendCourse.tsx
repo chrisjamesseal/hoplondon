@@ -4,6 +4,8 @@ import { useLearn } from '../store'
 import { Card } from '../components'
 import { buildFollowOnPrompt, CLAUDE_URL, parseCourseJson } from '../lib/claudePrompt'
 import { normalizeCourse } from '../lib/normalize'
+import AutoGenerate, { ModeSwitch, type Mode } from './AutoGenerate'
+import { getApiKey } from '../lib/claudeApi'
 import { titleCase } from '../lib/titleCase'
 
 /** Prompts longer than this can't ride in a web address, so Claude opens empty and the copied prompt is pasted in */
@@ -17,6 +19,7 @@ export default function ExtendCourse() {
   const [copied, setCopied] = useState<'ok' | 'manual' | null>(null)
   const [pasted, setPasted] = useState('')
   const [error, setError] = useState('')
+  const [mode, setMode] = useState<Mode>(getApiKey() ? 'auto' : 'manual')
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
   if (!course) {
@@ -76,6 +79,13 @@ export default function ExtendCourse() {
       </p>
 
       <Card>
+        <ModeSwitch mode={mode} onChange={setMode} />
+        {mode === 'auto' ? (
+          <AutoGenerate prompt={prompt} ready label="Add more lessons" onDone={(t) => {
+              extendCourse(course.id, normalizeCourse(parseCourseJson(t), course.source, 'claude').units)
+              navigate('/path')
+            }} />
+        ) : (
         <ol className="steps">
           <li className="step">
             <span className="step-num">1</span>
@@ -138,6 +148,7 @@ export default function ExtendCourse() {
             </div>
           </li>
         </ol>
+        )}
       </Card>
     </div>
   )
