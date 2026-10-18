@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { generateText, getApiKey, setApiKey } from '../lib/claudeApi'
+import { generateText, getApiKey, getModel, MODELS, setApiKey, setModel } from '../lib/claudeApi'
 
 export type Mode = 'auto' | 'manual'
 
@@ -32,6 +32,7 @@ interface Props {
 export default function AutoGenerate({ prompt, ready, pdf, readWeb, onDone, label }: Props) {
   const [key, setKey] = useState(getApiKey())
   const [draft, setDraft] = useState('')
+  const [model, setModelState] = useState(getModel())
   const [busy, setBusy] = useState(false)
   const [chars, setChars] = useState(0)
   const [error, setError] = useState('')
@@ -87,6 +88,21 @@ export default function AutoGenerate({ prompt, ready, pdf, readWeb, onDone, labe
 
   return (
     <div className="auto-box">
+      <div className="model-row" role="radiogroup" aria-label="Model">
+        {MODELS.map((m) => (
+          <button
+            key={m.id}
+            role="radio"
+            aria-checked={model === m.id}
+            className={model === m.id ? 'active' : ''}
+            disabled={busy}
+            onClick={() => (setModel(m.id), setModelState(m.id))}
+          >
+            {m.label}
+          </button>
+        ))}
+      </div>
+      <p className="tiny muted">{MODELS.find((m) => m.id === model)?.hint}</p>
       <button className="btn green wide" disabled={!ready || busy} onClick={run}>
         {busy ? 'Writing...' : label}
       </button>

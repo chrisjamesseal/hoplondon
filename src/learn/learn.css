@@ -755,3 +755,6 @@ button:disabled { cursor: default; }
 .hearts-row { gap: 14px; }
 .streak-chip { color: var(--orange); }
 .card-hearts { display: flex; gap: 14px; }
+.model-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.model-row button { min-height: 42px; border-radius: 12px; border: 2px solid var(--border); background: var(--surface); color: var(--muted); font-weight: 900; box-shadow: 0 3px 0 var(--border); }
+.model-row button.active { border-color: var(--blue); background: var(--blue-soft); color: var(--text); box-shadow: 0 3px 0 var(--blue); }
