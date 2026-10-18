@@ -51,14 +51,15 @@ export default function Home() {
         <ProgressBar value={cp.ratio} label="Course progress" />
         {step ? (
           <button className="btn green wide" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
-            {step.kind === 'quiz' ? '🏆' : '🚀'} {nextTitle && titleCase(nextTitle)}
+            <span>{step.kind === 'quiz' ? '🏆' : '🚀'}</span>
+            <span className="btn-text">{nextTitle && titleCase(nextTitle)}</span>
           </button>
         ) : (
           <div className="complete-box">
             <strong>🏆 Course Complete!</strong>
             <span className="muted small">You finished every lesson and quiz.</span>
             <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
-              🚀 Make a harder follow on
+              🚀 Add more lessons
             </button>
             <div className="complete-actions">
               <button className="btn blue" onClick={() => navigate('/practice')}>

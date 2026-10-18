@@ -742,3 +742,6 @@ button:disabled { cursor: default; }
 .archive-delete { margin-top: 12px; }
 .archive-confirm { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .btn { text-transform: uppercase !important; letter-spacing: 0.6px; }
+.btn { white-space: nowrap; }
+.btn .btn-text { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.btn { max-width: 100%; }

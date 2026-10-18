@@ -140,7 +140,7 @@ export default function Path() {
         <div className="path-end">
           <strong>🏆 Course Complete!</strong>
           <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
-            🚀 Make a harder follow on
+            🚀 Add more lessons
           </button>
         </div>
       )}

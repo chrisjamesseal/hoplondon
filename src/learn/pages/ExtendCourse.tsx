@@ -115,7 +115,7 @@ export default function ExtendCourse() {
             <div className="grow">
               <strong>Bring It Back Here</strong>
               <button className="btn green wide" onClick={pasteFromClipboard}>
-                Paste and add to course
+                Paste and add
               </button>
               <label htmlFor="extend-paste" className="tiny muted or-label">
                 or paste it here
