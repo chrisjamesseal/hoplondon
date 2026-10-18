@@ -5,6 +5,7 @@ import { useActiveCourse, useLearn } from '../store'
 import {
   courseProgress,
   dayKey,
+  lessonsOn,
   flatLessons,
   isCourseComplete,
   jumpTestExercises,
@@ -18,6 +19,7 @@ import {
   stepsBeforeUnit,
   unitQuizExercises,
 } from '../lib/gamify'
+import { GATE_KEY } from '../lib/gate'
 import { play } from '../lib/sound'
 import { titleCase } from '../lib/titleCase'
 import { clearPause, loadPause, savePause } from '../lib/pause'
@@ -277,6 +279,13 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const afterDone = () => {
     const state = useLearn.getState()
     if (paused) return navigate(`/lesson/${paused.lessonId}`)
+    // Opened from the focus gate: once today's goal is met, go back to it so the app can be opened
+    try {
+      const gate = sessionStorage.getItem(GATE_KEY)
+      if (gate && lessonsOn(dayKey(), state.lessonsByDay, state.progress) >= state.dailyLessons) return navigate(`/gate/${gate}`)
+    } catch {
+      // No session storage: carry on as normal
+    }
     if (course && mode !== 'practice' && isCourseComplete(course, state.progress) && !(state.archived ?? []).includes(course.id)) return setPhase('course')
     navigate('/path')
   }

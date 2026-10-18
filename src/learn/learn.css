@@ -706,3 +706,6 @@ button:disabled { cursor: default; }
 /* home and profile bits */
 .change-course { margin-top: 10px; }
 .see-all { color: var(--blue); font-weight: 900; text-decoration: none; }
+
+/* focus gate */
+.gate-bar { width: 100%; max-width: 280px; margin-top: 8px; display: flex; }
