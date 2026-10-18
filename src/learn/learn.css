@@ -197,7 +197,7 @@ button:disabled { cursor: default; }
 .course-card-top { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
 .course-emoji { font-size: 44px; line-height: 1; }
 .course-card .row-between { margin-bottom: 8px; }
-.course-card .btn { margin-top: 16px; text-transform: none; letter-spacing: 0; font-size: 16px; }
+.course-card .btn { margin-top: 16px; }
 .goal-card .row-between { margin-bottom: 8px; }
 .unit { margin: 28px 0 8px; }
 .unit-banner {
@@ -467,7 +467,7 @@ button:disabled { cursor: default; }
 .unit-row-emoji { font-size: 38px; line-height: 1; }
 .unit-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .unit-row-count { font-weight: 800; color: var(--muted); }
-.home-page .btn.wide { margin-top: 8px; text-transform: none; letter-spacing: 0; font-size: 16px; }
+.home-page .btn.wide { margin-top: 8px; }
 .unit-emoji { font-size: 40px; line-height: 1; flex-shrink: 0; }
 .unit-banner-text { flex: 1; min-width: 0; }
 .unit-banner { justify-content: flex-start; }
@@ -738,3 +738,7 @@ button:disabled { cursor: default; }
 .settings-card .confirm .small { margin-bottom: 4px; }
 .course-card { position: relative; }
 .card-hearts { position: absolute; top: 14px; right: 16px; font-weight: 800; font-size: 18px; color: var(--red); }
+
+.archive-delete { margin-top: 12px; }
+.archive-confirm { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.btn { text-transform: uppercase !important; letter-spacing: 0.6px; }

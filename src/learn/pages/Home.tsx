@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, flatLessons, lessonsOn, nextStep } from '../lib/gamify'
@@ -9,8 +8,7 @@ import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { hearts, progress, lessonsByDay, dailyLessons, archived, archiveCourse, deleteCourse } = useLearn()
-  const [confirmDelete, setConfirmDelete] = useState(false)
+  const { hearts, progress, lessonsByDay, dailyLessons, archived, archiveCourse } = useLearn()
   const navigate = useNavigate()
 
   if (!course) {
@@ -66,17 +64,6 @@ export default function Home() {
               <button className="btn blue" onClick={() => navigate('/practice')}>
                 💪 Practise
               </button>
-              {!isArchived && (
-                <button
-                  className="btn ghost"
-                  onClick={() => {
-                    archiveCourse(course.id)
-                    navigate('/courses')
-                  }}
-                >
-                  📦 Add to archive
-                </button>
-              )}
             </div>
           </div>
         )}
@@ -120,31 +107,16 @@ export default function Home() {
       <Link to="/path" className="btn blue wide">
         🗺️ Open Lesson Path
       </Link>
-      <button className="btn ghost wide danger-text delete-course" onClick={() => setConfirmDelete(true)}>
-        🗑 Delete Course
-      </button>
-
-      {confirmDelete && (
-        <div className="modal-bg" onClick={() => setConfirmDelete(false)}>
-          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="del-title" onClick={(e) => e.stopPropagation()}>
-            <div className="big-emoji">{course.emoji}</div>
-            <h2 id="del-title">Delete This Course?</h2>
-            <p className="muted">{titleCase(course.title)} and all its progress will be removed. This can't be undone.</p>
-            <button
-              className="btn red wide"
-              onClick={() => {
-                deleteCourse(course.id)
-                setConfirmDelete(false)
-                navigate('/courses')
-              }}
-            >
-              Delete Course
-            </button>
-            <button className="btn ghost wide" autoFocus onClick={() => setConfirmDelete(false)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+      {!isArchived && (
+        <button
+          className="btn ghost wide delete-course"
+          onClick={() => {
+            archiveCourse(course.id)
+            navigate('/courses')
+          }}
+        >
+          📦 Add to archive
+        </button>
       )}
     </div>
   )

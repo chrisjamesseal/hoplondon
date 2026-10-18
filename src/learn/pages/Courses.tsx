@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useLearn } from '../store'
 import { courseProgress } from '../lib/gamify'
@@ -8,8 +9,9 @@ import { categoryById, categoryOf } from '../lib/categorise'
 import { ragOf } from '../lib/rag'
 
 export default function Courses() {
-  const { courses, progress, activeCourseId, setActiveCourse, archived, unarchiveCourse } = useLearn()
+  const { courses, progress, activeCourseId, setActiveCourse, archived, unarchiveCourse, deleteCourse } = useLearn()
   const navigate = useNavigate()
+  const [confirmId, setConfirmId] = useState<string | null>(null)
   const archivedIds = archived ?? []
   const { cat } = useParams()
   const category = categoryById(cat)
@@ -45,6 +47,22 @@ export default function Courses() {
             </div>
           </div>
         </button>
+        {inArchive &&
+          (confirmId === c.id ? (
+            <div className="archive-confirm">
+              <span className="small muted">Delete this course and all its progress?</span>
+              <button className="btn red wide" onClick={() => (deleteCourse(c.id), setConfirmId(null))}>
+                🗑 Delete Course
+              </button>
+              <button className="btn ghost wide" onClick={() => setConfirmId(null)}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button className="btn ghost wide danger-text archive-delete" onClick={() => setConfirmId(c.id)}>
+              🗑 Delete Course
+            </button>
+          ))}
       </Card>
     )
   }
