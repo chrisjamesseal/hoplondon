@@ -73,7 +73,7 @@ export default function LearnApp() {
       </nav>
       <div className="content">
         <main className="page">
-          {!/^\/(courses|profile)/.test(pathname) && <HeartsRow />}
+          {!/^\/(courses|profile|create|$)/.test(pathname) && <HeartsRow />}
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/path" element={<Path />} />

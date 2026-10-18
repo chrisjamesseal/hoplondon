@@ -9,7 +9,7 @@ import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { progress, lessonsByDay, dailyLessons, archived, archiveCourse, deleteCourse } = useLearn()
+  const { hearts, progress, lessonsByDay, dailyLessons, archived, archiveCourse, deleteCourse } = useLearn()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const navigate = useNavigate()
 
@@ -37,6 +37,7 @@ export default function Home() {
     <div className="home-page">
       <Card className="course-card">
         <div className="course-card-top">
+          <div className="card-hearts" title="Hearts">❤️ {hearts}</div>
           <span className="course-emoji">{course.emoji}</span>
           <div>
             <h1>{titleCase(course.title)}</h1>
