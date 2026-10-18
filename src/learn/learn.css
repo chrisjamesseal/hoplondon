@@ -589,8 +589,8 @@ button:disabled { cursor: default; }
 .home-page > .btn.wide:last-child { margin-bottom: 8px; }
 .complete-box { display: flex; flex-direction: column; gap: 4px; margin-top: 16px; padding: 14px; border-radius: 14px; background: color-mix(in srgb, var(--gold) 18%, var(--bg)); }
 .complete-box strong { font-size: 18px; }
-.complete-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
-.complete-actions .btn { flex: 1 1 140px; margin-top: 0 !important; }
+.complete-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.complete-actions .btn { flex: none; width: 100%; margin-top: 0 !important; }
 
 /* lesson end screens */
 .done-stats.two { grid-template-columns: repeat(2, 1fr); }
@@ -709,3 +709,18 @@ button:disabled { cursor: default; }
 
 /* focus gate */
 .gate-bar { width: 100%; max-width: 280px; margin-top: 8px; display: flex; }
+
+/* written answers and hints (harder levels) */
+.type-row { display: flex; align-items: center; gap: 4px; padding: 6px 14px; border: 2px solid var(--border); border-bottom-width: 4px; border-radius: 16px; background: var(--surface-2); }
+.type-row:focus-within { border-color: var(--blue); }
+.type-row.is-right { border-color: var(--green); background: var(--green-soft); }
+.type-row.is-wrong { border-color: var(--red); background: var(--red-soft); }
+.type-given { font-size: 24px; font-weight: 900; color: var(--blue); letter-spacing: 0.5px; }
+.type-input { flex: 1; min-width: 0; font: inherit; font-size: 24px; font-weight: 800; color: var(--text); background: none; border: 0; outline: 0; padding: 10px 0; }
+.type-input::placeholder { color: var(--muted); font-weight: 600; font-size: 18px; }
+.hint-btn { min-width: 0; }
+.hint-note { margin-top: 16px; padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--gold) 16%, var(--bg)); font-size: 15px; font-weight: 700; }
+.choice.ruled-out, .tile.ruled-out { opacity: 0.3; text-decoration: line-through; pointer-events: none; }
+
+.path-end { display: flex; flex-direction: column; gap: 12px; align-items: stretch; text-align: center; margin: 8px 0 24px; padding: 16px; border-radius: 16px; background: color-mix(in srgb, var(--gold) 18%, var(--bg)); }
+.path-end strong { font-size: 18px; }

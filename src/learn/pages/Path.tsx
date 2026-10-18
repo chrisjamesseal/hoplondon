@@ -136,6 +136,14 @@ export default function Path() {
           </section>
         )
       })}
+      {!next && (
+        <div className="path-end">
+          <strong>🏆 Course Complete!</strong>
+          <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
+            🚀 Make a harder follow on
+          </button>
+        </div>
+      )}
     </div>
   )
 }

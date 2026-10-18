@@ -41,3 +41,22 @@ describe('normalizeCourse', () => {
     expect(c.units[0].lessons[0].id).toMatch(/^l_/)
   })
 })
+
+describe('written answer exercises', () => {
+  it('reads a written answer with alternatives and a hint', async () => {
+    const { normalizeExercise } = await import('./normalize')
+    expect(normalizeExercise({ type: 'type', prompt: 'One word?', answer: 'Premise', accept: ['the premise', 'premise'], hint: 'Core idea', explanation: 'Why' })).toEqual({
+      type: 'type',
+      prompt: 'One word?',
+      answer: 'Premise',
+      accept: ['the premise'],
+      hint: 'Core idea',
+      explanation: 'Why',
+    })
+  })
+
+  it('rejects answers too long to check fairly', async () => {
+    const { normalizeExercise } = await import('./normalize')
+    expect(normalizeExercise({ type: 'type', prompt: 'Why?', answer: 'because the thing happens when the other thing does' })).toBeNull()
+  })
+})

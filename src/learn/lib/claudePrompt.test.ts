@@ -94,3 +94,13 @@ describe('buildFollowOnPrompt', () => {
     expect(buildFollowOnPrompt(DEMO_COURSE)).not.toMatch(/[—–]/)
   })
 })
+
+describe('written answer prompts', () => {
+  it('asks harder levels for written answers and hints, and keeps them out of level one', () => {
+    const p = buildFollowOnPrompt(DEMO_COURSE)
+    expect(p).toContain('"type": "type"')
+    expect(p).toContain('hint button')
+    expect(p).toContain('never an mcq')
+    expect(buildPrompt({ kind: 'topic', topic: 'Bees' })).not.toContain('"type": "type"')
+  })
+})

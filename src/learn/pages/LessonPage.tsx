@@ -9,6 +9,8 @@ import {
   flatLessons,
   isCourseComplete,
   mixTrueFalse,
+  exercisesFor,
+  typedMatches,
   jumpTestExercises,
   lessonXp,
   liveStreak,
@@ -26,7 +28,7 @@ import { titleCase } from '../lib/titleCase'
 import { clearPause, loadPause, savePause } from '../lib/pause'
 import { Confetti, ProgressBar } from '../components'
 import { pickEmoji } from '../lib/emoji'
-import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse } from './Exercises'
+import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse, Typed } from './Exercises'
 import { buildGlossary, GlossContext, plainText, RichText } from './RichText'
 
 export type LessonMode = 'lesson' | 'practice' | 'quiz' | 'jump'
@@ -62,6 +64,35 @@ function findUnit(courses: Course[], id: string): { course: Course; unitIndex: n
   return null
 }
 
+/** Written answers start with one letter given; the second and third hints give another each */
+const lettersFor = (hints: number, answer: string) => Math.min(1 + Math.max(0, hints - 1), Math.max(1, answer.length - 1))
+
+/** How many hints a question can give, 0 when it has none */
+function maxHints(ex: Exercise, tiles: string[]): number {
+  switch (ex.type) {
+    case 'type':
+      return 1 + Math.min(2, Math.max(0, ex.answer.length - 2))
+    case 'mcq':
+      return Math.max(0, ex.options.length - 2)
+    case 'cloze':
+      return Math.max(0, tiles.length - 2)
+    case 'tf':
+      return ex.hint ? 1 : 0
+    default:
+      return 0
+  }
+}
+
+/** The nudge shown after the first hint. Written answers fall back to the word length. */
+function hintText(ex: Exercise, hints: number): string {
+  if (ex.type === 'match' || hints < 1) return ''
+  if (ex.type === 'type') return ex.hint ?? `${ex.answer.length} letters`
+  return ex.hint ?? ''
+}
+
+/** The wrong choices a hint rules out, in a fixed order */
+const ruledOutFor = (wrong: number[], hints: number) => new Set(wrong.slice(0, hints))
+
 const toItem = (ex: Exercise, i: number): Item => ({ key: `${i}`, ex, tiles: ex.type === 'cloze' ? clozeTiles(ex) : [] })
 
 function correctText(ex: Exercise): string {
@@ -71,6 +102,7 @@ function correctText(ex: Exercise): string {
     case 'tf':
       return ex.answer ? 'True' : 'False'
     case 'cloze':
+    case 'type':
       return ex.answer
     case 'match':
       return ''
@@ -108,7 +140,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         title: titleCase(lesson.title),
         emoji: pickEmoji(lesson.emoji, lesson.title),
         cards: [...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
-        exercises: mixTrueFalse(lesson.exercises, lesson.id),
+        exercises: mixTrueFalse(exercisesFor(course, course.units.find((u) => u.lessons.some((l) => l.id === lesson.id)) ?? course.units[0], lesson.exercises), lesson.id),
       }
     }
     if (tested) {
@@ -129,7 +161,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
     if (!activeCourse) return null
     const lessons = flatLessons(activeCourse)
     const done = lessons.filter((l) => store.progress[l.id]?.completions)
-    const pool = (done.length ? done : lessons.slice(0, 1)).flatMap((l) => l.exercises)
+    const pool = (done.length ? done : lessons.slice(0, 1)).flatMap((l) => exercisesFor(activeCourse, activeCourse.units.find((u) => u.lessons.some((x) => x.id === l.id)) ?? activeCourse.units[0], l.exercises))
     return { course: activeCourse, title: 'Practice', emoji: '💪', cards: [], exercises: shuffle(pool).slice(0, 8) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, lessonId, unitId])
@@ -151,6 +183,8 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const [teachIdx, setTeachIdx] = useState(0)
   const [idx, setIdx] = useState(0)
   const [choice, setChoice] = useState<number | null>(null)
+  const [typed, setTyped] = useState('')
+  const [hints, setHints] = useState(0)
   const [result, setResult] = useState<{ correct: boolean; note?: string } | null>(null)
   const [solved, setSolved] = useState(resume?.solved ?? 0)
   const [firstTry, setFirstTry] = useState(resume?.firstTry ?? 0)
@@ -201,7 +235,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       // Lessons only count a question once it's right; tests count every answer
       if (correct || tested) setSolved((n) => n + 1)
       if (correct) {
-        if (!missed.has(item.key)) setFirstTry((n) => n + 1)
+        if (!missed.has(item.key) && hints === 0) setFirstTry((n) => n + 1)
         return setResult({ correct: true, note })
       }
       setMissed((m) => new Set(m).add(item.key))
@@ -212,20 +246,27 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       if (usesHearts) store.loseHeart()
       setResult({ correct: false, note })
     },
-    [item, missed, store, tested, usesHearts],
+    [hints, item, missed, store, tested, usesHearts],
   )
 
   const check = useCallback(() => {
-    if (!item || choice === null || result) return
+    if (!item || result) return
     const ex = item.ex
+    if (ex.type === 'type') {
+      if (!typed.trim()) return
+      return grade(typedMatches(ex, ex.answer.slice(0, lettersFor(hints, ex.answer)) + typed))
+    }
+    if (choice === null) return
     const correct =
       ex.type === 'mcq' ? choice === ex.answer : ex.type === 'tf' ? (choice === 0) === ex.answer : ex.type === 'cloze' ? item.tiles[choice] === ex.answer : false
     grade(correct)
-  }, [choice, grade, item, result])
+  }, [choice, grade, hints, item, result, typed])
 
   const next = useCallback(() => {
     setResult(null)
     setChoice(null)
+    setTyped('')
+    setHints(0)
     if (usesHearts && useLearn.getState().hearts <= 0) {
       // Remember the spot so practising to refill doesn't mean starting again
       savePause({
@@ -261,7 +302,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       if (phase !== 'quiz' || !item) return
       if (e.key === 'Enter') result ? next() : check()
       const n = Number(e.key)
-      if (!result && n >= 1 && n <= 4) {
+      if (!result && n >= 1 && n <= 4 && item.ex.type !== 'type') {
         const max = item.ex.type === 'mcq' ? item.ex.options.length : item.ex.type === 'tf' ? 2 : item.tiles.length
         if (n <= max && item.ex.type !== 'match') setChoice(n - 1)
       }
@@ -273,6 +314,18 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   if (!session || total === 0) return <Navigate to={tested ? '/path' : '/'} replace />
 
   const course = session.course
+  const hintsOn = (course?.level ?? 1) >= 2
+  // A hint can reveal a letter the learner has already typed, so drop it from what they wrote
+  const useHint = () => {
+    if (item?.ex.type === 'type') {
+      const ans = item.ex.answer
+      const from = lettersFor(hints, ans)
+      const to = lettersFor(hints + 1, ans)
+      if (to > from && typed.toLowerCase().startsWith(ans.slice(from, to).toLowerCase())) setTyped(typed.slice(to - from))
+    }
+    setHints((h) => h + 1)
+  }
+  const canHint = hintsOn && !!item && !result && hints < maxHints(item.ex, item.tiles)
   const progressValue = phase === 'done' || phase === 'course' ? 1 : solved / total
   const quit = () => (phase === 'quiz' && solved > 0 ? setQuitAsk(true) : navigate('/path'))
   const paused = mode === 'practice' ? loadPause() : null
@@ -513,12 +566,40 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
                 </div>
               )}
               {item.ex.type === 'mcq' && (
-                <Mcq lang={langCode} ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? item.ex.answer : undefined} />
+                <Mcq
+                  lang={langCode}
+                  ex={item.ex}
+                  value={choice}
+                  onChange={(v) => (play(store.sound, 'tap'), setChoice(v))}
+                  locked={!!result}
+                  reveal={result ? item.ex.answer : undefined}
+                  ruledOut={hintsOn ? ruledOutFor(item.ex.options.map((_, i) => i).filter((i) => i !== (item.ex as { answer: number }).answer && i !== choice), hints) : undefined}
+                />
+              )}
+              {item.ex.type === 'type' && (
+                <Typed
+                  ex={item.ex}
+                  letters={lettersFor(hints, item.ex.answer)}
+                  value={typed}
+                  onChange={setTyped}
+                  locked={!!result}
+                  right={result ? result.correct : undefined}
+                />
               )}
               {item.ex.type === 'tf' && (
                 <TrueFalse ex={item.ex} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} reveal={result ? (item.ex.answer ? 0 : 1) : undefined} />
               )}
-              {item.ex.type === 'cloze' && <Cloze ex={item.ex} tiles={item.tiles} value={choice} onChange={(v) => (play(store.sound, 'tap'), setChoice(v))} locked={!!result} />}
+              {item.ex.type === 'cloze' && (
+                <Cloze
+                  ex={item.ex}
+                  tiles={item.tiles}
+                  value={choice}
+                  onChange={(v) => (play(store.sound, 'tap'), setChoice(v))}
+                  locked={!!result}
+                  ruledOut={hintsOn ? ruledOutFor(item.tiles.map((_, i) => i).filter((i) => item.tiles[i] !== (item.ex as { answer: string }).answer && i !== choice), hints) : undefined}
+                />
+              )}
+              {hintsOn && hints > 0 && !result && hintText(item.ex, hints) && <p className="hint-note">💡 {hintText(item.ex, hints)}</p>}
               {item.ex.type === 'match' && (
                 <Match
                   ex={item.ex}
@@ -579,9 +660,15 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
               </>
             ) : (
               <>
-                <span />
+                {hintsOn && item && maxHints(item.ex, item.tiles) > 0 ? (
+                  <button className="btn ghost hint-btn" disabled={!canHint} onClick={useHint}>
+                    💡 Hint{hints > 0 ? ` (${hints}/${maxHints(item.ex, item.tiles)})` : ''}
+                  </button>
+                ) : (
+                  <span />
+                )}
                 {item?.ex.type !== 'match' && (
-                  <button className="btn green" disabled={choice === null} onClick={check}>
+                  <button className="btn green" disabled={item?.ex.type === 'type' ? !typed.trim() : choice === null} onClick={check}>
                     Check
                   </button>
                 )}

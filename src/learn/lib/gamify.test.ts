@@ -138,3 +138,36 @@ describe('mixTrueFalse', () => {
     expect(firstAnswers.size).toBe(2)
   })
 })
+
+describe('written answers', () => {
+  it('matches ignoring case and punctuation, takes alternatives and forgives one slip in longer words', async () => {
+    const { typedMatches } = await import('./gamify')
+    const ex = { answer: 'Premise', accept: ['the premise'] }
+    expect(typedMatches(ex, 'premise')).toBe(true)
+    expect(typedMatches(ex, ' The Premise! ')).toBe(true)
+    expect(typedMatches(ex, 'premice')).toBe(true)
+    expect(typedMatches(ex, 'promise')).toBe(true)
+    expect(typedMatches(ex, 'pre')).toBe(false)
+    expect(typedMatches({ answer: 'cat' }, 'cot')).toBe(false)
+    expect(typedMatches(ex, '')).toBe(false)
+  })
+
+  it('writes out short multiple choice and gap fills, but leaves scenario questions alone', async () => {
+    const { hardenExercise } = await import('./gamify')
+    const short = { type: 'mcq' as const, prompt: 'What is the idea a video promises?', options: ['Premise', 'Budget', 'Edit', 'Thumbnail'], answer: 0 }
+    expect(hardenExercise(short)).toMatchObject({ type: 'type', answer: 'Premise' })
+    const long = { type: 'mcq' as const, prompt: 'A colleague misses a deadline. What is the best response?', options: ['Ask what got in the way and agree a new date together', 'Say nothing', 'Escalate', 'Reassign it'], answer: 0 }
+    expect(hardenExercise(long)).toBe(long)
+    const listy = { ...short, prompt: 'Which of the following is the promise?' }
+    expect(hardenExercise(listy)).toBe(listy)
+    expect(hardenExercise({ type: 'cloze', sentence: 'The ___ sells the click.', answer: 'title', distractors: ['a'] })).toMatchObject({ type: 'type', prompt: 'The ___ sells the click.', answer: 'title' })
+  })
+
+  it('only hardens units from earlier levels', async () => {
+    const { exercisesFor } = await import('./gamify')
+    const mcq = { type: 'mcq' as const, prompt: 'Name it?', options: ['Alpha', 'Beta'], answer: 0 }
+    const course = { ...DEMO_COURSE, level: 2, units: [{ ...DEMO_COURSE.units[0], level: 1 }, { ...DEMO_COURSE.units[1], level: 2 }] }
+    expect(exercisesFor(course, course.units[0], [mcq])[0].type).toBe('type')
+    expect(exercisesFor(course, course.units[1], [mcq])[0].type).toBe('mcq')
+  })
+})

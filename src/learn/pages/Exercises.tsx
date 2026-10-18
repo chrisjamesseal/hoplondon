@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { ClozeExercise, MatchExercise, McqExercise, TrueFalseExercise } from '../types'
+import type { ClozeExercise, MatchExercise, McqExercise, TrueFalseExercise, TypeExercise } from '../types'
 import { shuffle } from '../lib/gamify'
 import { BLANK } from '../lib/normalize'
 import { canSpeak, speak } from '../lib/speech'
@@ -28,7 +28,7 @@ interface ChoiceProps<E> {
 const mark = (i: number, value: number | null, reveal?: number) =>
   reveal === undefined ? (value === i ? 'selected' : '') : i === reveal ? 'is-right' : value === i ? 'is-wrong' : ''
 
-export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<McqExercise> & { lang?: string }) {
+export function Mcq({ ex, value, onChange, locked, reveal, lang, ruledOut }: ChoiceProps<McqExercise> & { lang?: string; ruledOut?: Set<number> }) {
   const [lead, ...rest] = ex.prompt.split('\n\n')
   return (
     <div className={`ex ${ex.audio && canSpeak() ? 'has-dock' : ''}`}>
@@ -36,7 +36,7 @@ export function Mcq({ ex, value, onChange, locked, reveal, lang }: ChoiceProps<M
       <p className="ex-prompt">{rest.length ? <Gap text={rest.join('\n\n')} /> : <RichText text={ex.prompt} />}</p>
       <div className="choices">
         {ex.options.map((o, i) => (
-          <button key={i} className={`choice ${mark(i, value, reveal)}`} disabled={locked} onClick={() => onChange(i)}>
+          <button key={i} className={`choice ${mark(i, value, reveal)} ${ruledOut?.has(i) ? 'ruled-out' : ''}`} disabled={locked || ruledOut?.has(i)} onClick={() => onChange(i)}>
             <span className="choice-key">{i + 1}</span>
             {o}
           </button>
@@ -80,7 +80,7 @@ export function clozeTiles(ex: ClozeExercise): string[] {
   return shuffle([ex.answer, ...ex.distractors])
 }
 
-export function Cloze({ ex, tiles, value, onChange, locked }: ChoiceProps<ClozeExercise> & { tiles: string[] }) {
+export function Cloze({ ex, tiles, value, onChange, locked, ruledOut }: ChoiceProps<ClozeExercise> & { tiles: string[]; ruledOut?: Set<number> }) {
   const [before, after] = ex.sentence.split(BLANK)
   return (
     <div className="ex">
@@ -94,7 +94,7 @@ export function Cloze({ ex, tiles, value, onChange, locked }: ChoiceProps<ClozeE
       </p>
       <div className="tiles">
         {tiles.map((t, i) => (
-          <button key={i} className={`tile ${value === i ? 'used' : ''}`} disabled={locked || value === i} onClick={() => onChange(i)}>
+          <button key={i} className={`tile ${value === i ? 'used' : ''} ${ruledOut?.has(i) ? 'ruled-out' : ''}`} disabled={locked || value === i || ruledOut?.has(i)} onClick={() => onChange(i)}>
             {t}
           </button>
         ))}
@@ -173,5 +173,52 @@ function Gap({ text }: { text: string }) {
         </span>
       ))}
     </>
+  )
+}
+
+/** A written answer. The first letters are given, the learner types the rest. */
+export function Typed({
+  ex,
+  letters,
+  value,
+  onChange,
+  locked,
+  right,
+}: {
+  ex: TypeExercise
+  /** How many opening letters are shown: one to start, more as hints are used */
+  letters: number
+  value: string
+  onChange: (v: string) => void
+  locked: boolean
+  /** Set once checked, to colour the box */
+  right?: boolean
+}) {
+  const given = ex.answer.slice(0, letters)
+  const [lead, ...rest] = ex.prompt.split('\n\n')
+  return (
+    <div className="ex">
+      <h2 className="ex-title">{rest.length ? titleCase(lead) : 'Write the Answer'}</h2>
+      <p className="ex-prompt">
+        <RichText text={rest.length ? rest.join('\n\n') : ex.prompt} />
+      </p>
+      <div className={`type-row ${right === undefined ? '' : right ? 'is-right' : 'is-wrong'}`}>
+        <span className="type-given">{given}</span>
+        <input
+          className="type-input"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={locked}
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          enterKeyHint="done"
+          placeholder="Type the rest"
+          aria-label="Your answer"
+        />
+      </div>
+    </div>
   )
 }

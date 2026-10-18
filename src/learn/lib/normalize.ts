@@ -20,6 +20,7 @@ export function normalizeExercise(raw: unknown): Exercise | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
   const explanation = str(r.explanation) || undefined
+  const hint = str(r.hint) || undefined
   switch (r.type) {
     case 'mcq': {
       const options = strs(r.options)
@@ -29,12 +30,12 @@ export function normalizeExercise(raw: unknown): Exercise | null {
       // Models like to put the right answer first; shuffle so position gives nothing away
       const correct = options[answer]
       const mixed = shuffle([...new Set(options)])
-      return { type: 'mcq', prompt, options: mixed, answer: mixed.indexOf(correct), explanation, audio: str(r.audio) || undefined }
+      return { type: 'mcq', prompt, options: mixed, answer: mixed.indexOf(correct), explanation, hint, audio: str(r.audio) || undefined }
     }
     case 'tf': {
       const statement = str(r.statement) || str(r.prompt)
       if (!statement || typeof r.answer !== 'boolean') return null
-      return { type: 'tf', statement, answer: r.answer, explanation }
+      return { type: 'tf', statement, answer: r.answer, explanation, hint }
     }
     case 'cloze': {
       let sentence = str(r.sentence) || str(r.prompt)
@@ -48,7 +49,7 @@ export function normalizeExercise(raw: unknown): Exercise | null {
       sentence = sentence.replace(/_{3,}/g, BLANK)
       const distractors = [...new Set(strs(r.distractors))].filter((d) => d.toLowerCase() !== answer.toLowerCase()).slice(0, 4)
       if (distractors.length < 1) return null
-      return { type: 'cloze', sentence, answer, distractors, explanation }
+      return { type: 'cloze', sentence, answer, distractors, explanation, hint }
     }
     case 'match': {
       const pairs = (Array.isArray(r.pairs) ? r.pairs : [])
@@ -57,6 +58,14 @@ export function normalizeExercise(raw: unknown): Exercise | null {
         .slice(0, 5)
       if (pairs.length < 2) return null
       return { type: 'match', prompt: str(r.prompt) || 'Match the pairs', pairs }
+    }
+    case 'type': {
+      const prompt = str(r.prompt)
+      const answer = str(r.answer)
+      // Written answers are one word or a short phrase; anything longer can't be checked fairly
+      if (!prompt || !answer || answer.length > 40 || answer.split(/\s+/).length > 4) return null
+      const accept = [...new Set(strs(r.accept))].filter((a) => a.toLowerCase() !== answer.toLowerCase()).slice(0, 6)
+      return { type: 'type', prompt, answer, accept: accept.length ? accept : undefined, hint, explanation }
     }
     default:
       return null

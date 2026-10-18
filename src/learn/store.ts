@@ -66,7 +66,11 @@ export const useLearn = create<LearnState>()(
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
       extendCourse: (id, units) =>
         set((s) => ({
-          courses: s.courses.map((c) => (c.id === id ? { ...c, units: [...c.units, ...units], level: (c.level ?? 1) + 1 } : c)),
+          courses: s.courses.map((c) => {
+            if (c.id !== id) return c
+            const level = (c.level ?? 1) + 1
+            return { ...c, units: [...c.units, ...units.map((u) => ({ ...u, level }))], level }
+          }),
           archived: (s.archived ?? []).filter((x) => x !== id),
           activeCourseId: id,
         })),

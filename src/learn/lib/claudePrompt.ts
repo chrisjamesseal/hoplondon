@@ -10,7 +10,12 @@ export type PromptSource =
   | { kind: 'link'; url: string; transcript?: string }
   | { kind: 'pdf'; fileName?: string }
 
-const FORMAT = `{
+const formatFor = (harder: boolean) => FORMAT_BASE.replace('__TYPE__', harder ? TYPE_EXAMPLE : '')
+
+const TYPE_EXAMPLE = `
+            { "type": "type", "prompt": "The idea a video promises its viewer, in one word. What is it?", "answer": "premise", "accept": ["the premise"], "hint": "It is what the whole video is built on.", "explanation": "Why." },`
+
+const FORMAT_BASE = `{
   "title": "Course title",
   "emoji": "🌋",
   "summary": "One sentence on what the learner will be able to do",
@@ -34,7 +39,7 @@ const FORMAT = `{
             { "type": "mcq", "prompt": "Listen. What does it mean?", "audio": "Wie viel kostet das?", "options": ["How much is it?", "Where is the station?", "Can I pay by card?", "What time is it?"], "answer": 0, "explanation": "Why." },
             { "type": "tf", "statement": "A clear statement.", "answer": true, "explanation": "Why." },
             { "type": "cloze", "sentence": "A sentence with one ___ gap.", "answer": "word", "distractors": ["other", "wrong", "words"], "explanation": "Why." },
-            { "type": "match", "prompt": "Match the pairs", "pairs": [{ "left": "Term", "right": "Short meaning" }] }
+            { "type": "match", "prompt": "Match the pairs", "pairs": [{ "left": "Term", "right": "Short meaning" }] },__TYPE__
           ]
         }
       ]
@@ -72,6 +77,7 @@ Exercises (mix all four types in every lesson)
 - tf: definitely true or definitely false. Make about half false, ideally popular myths. Mix the order unpredictably: never always put the false statement before the true one, never strictly alternate, and do not group the same answer together.
 - cloze: exactly one "___" gap; "answer" is the missing word or short phrase (often a key term); 3 plausible "distractors" of the same kind.
 - match: 3 or 4 pairs, such as terms and meanings or causes and effects, each side under 8 words.
+- Any exercise can carry an optional "hint": a short nudge that helps without giving the answer away. The app shows hints in harder levels.
 - Every explanation is one or two clear sentences on why the answer is right, adding a useful detail where it helps.
 
 If the course teaches a language
@@ -116,7 +122,7 @@ Output
 - Keep the JSON compact: no indentation and no blank lines.
 - Use exactly this format:
 
-${FORMAT}`
+${formatFor(false)}`
 }
 
 /** Pulls the course JSON out of a file or pasted reply (tolerates code fences and extra text) */
@@ -152,6 +158,10 @@ Follow on rules
 - Write 3 to 5 NEW units only, numbered from "Unit ${nextUnit}: ..." onwards. This replaces any rule above about how many units to make or how to number them.
 - Keep the same top level "title", "emoji" and "summary" as the original course${course.lang ? ` and "lang": "${course.lang}"` : ''}.
 - Every unit still needs its "quiz" of fresh questions.
+- Written answers: make "type" exercises the backbone of this level. At least half of every lesson's exercises and most of each unit's "quiz" must be "type", where the learner writes the answer. The learner sees only the first letter and has a hint button, so the answer must be one word or a short phrase of up to three words with one clear correct form, and the prompt must give enough context to recall it. List other wordings that should count in "accept".
+- Use "mcq" only for new scenario judgement at this level. Any question that checks a fact, term, name or number from the earlier levels must be a "type", never an mcq, tf or cloze.
+- Keep some "tf" and "match" for variety, but fewer than at the earlier level.
+- Give every "type" exercise a "hint": a short nudge that helps recall without revealing the answer.
 
 Output
 - Reply in this chat with the JSON only, inside a single code block.
@@ -160,7 +170,7 @@ Output
 - Keep the JSON compact: no indentation and no blank lines.
 - Use exactly this format, but with only the new units:
 
-${FORMAT}`
+${formatFor(true)}`
 }
 
 export const CLAUDE_URL = 'https://claude.ai/new'

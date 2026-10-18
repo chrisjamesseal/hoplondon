@@ -6,6 +6,7 @@ export interface McqExercise {
   options: string[]
   answer: number
   explanation?: string
+  hint?: string
   /** Foreign phrase to read aloud; shows a speaker button on the question */
   audio?: string
 }
@@ -15,6 +16,7 @@ export interface TrueFalseExercise {
   statement: string
   answer: boolean
   explanation?: string
+  hint?: string
 }
 
 /** Sentence with a single "___" gap, filled by tapping a word tile */
@@ -24,6 +26,7 @@ export interface ClozeExercise {
   answer: string
   distractors: string[]
   explanation?: string
+  hint?: string
 }
 
 export interface MatchExercise {
@@ -32,7 +35,19 @@ export interface MatchExercise {
   pairs: { left: string; right: string }[]
 }
 
-export type Exercise = McqExercise | TrueFalseExercise | ClozeExercise | MatchExercise
+/** Harder levels: the learner writes the answer. The first letter is shown and a hint is on hand. */
+export interface TypeExercise {
+  type: 'type'
+  prompt: string
+  /** One word or a very short phrase */
+  answer: string
+  /** Other wordings that count as right */
+  accept?: string[]
+  hint?: string
+  explanation?: string
+}
+
+export type Exercise = McqExercise | TrueFalseExercise | ClozeExercise | MatchExercise | TypeExercise
 
 /** A phrase to learn in a language course */
 export interface Phrase {
@@ -64,6 +79,8 @@ export interface Unit {
   lessons: Lesson[]
   /** Fresh end of unit questions, written to differ from the lesson exercises */
   quiz?: Exercise[]
+  /** Which run of the course added this unit: 1 for the original, 2 for the first harder follow on */
+  level?: number
 }
 
 export interface Course {

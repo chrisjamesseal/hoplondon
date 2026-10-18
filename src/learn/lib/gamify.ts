@@ -96,6 +96,54 @@ export function shuffle<T>(arr: T[], rand: () => number = Math.random): T[] {
   return a
 }
 
+const squash = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '')
+
+function editDistance(a: string, b: string): number {
+  const row = Array.from({ length: b.length + 1 }, (_, i) => i)
+  for (let i = 1; i <= a.length; i++) {
+    let prev = row[0]
+    row[0] = i
+    for (let j = 1; j <= b.length; j++) {
+      const tmp = row[j]
+      row[j] = Math.min(row[j] + 1, row[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1))
+      prev = tmp
+    }
+  }
+  return row[b.length]
+}
+
+/** Checks a written answer. Ignores case, spaces and punctuation, takes the listed alternatives, and forgives one slip in longer words. */
+export function typedMatches(ex: { answer: string; accept?: string[] }, input: string): boolean {
+  const got = squash(input)
+  if (!got) return false
+  return [ex.answer, ...(ex.accept ?? [])].some((target) => {
+    const want = squash(target)
+    return got === want || (want.length >= 5 && editDistance(got, want) <= 1)
+  })
+}
+
+/**
+ * At harder levels, questions about earlier levels have to be written out. Multiple choice with a short
+ * answer and gap fills become written answers. Everything else is left alone.
+ */
+export function hardenExercise(ex: Exercise): Exercise {
+  if (ex.type === 'cloze') return { type: 'type', prompt: ex.sentence, answer: ex.answer, hint: ex.hint, explanation: ex.explanation }
+  if (ex.type === 'mcq' && !ex.audio) {
+    const answer = ex.options[ex.answer]
+    const short = answer.length <= 28 && answer.split(/\s+/).length <= 3
+    // "Which of the following" only makes sense with the options in view
+    if (short && !/\b(following|these|below|above|options?|choices?)\b/i.test(ex.prompt)) {
+      return { type: 'type', prompt: ex.prompt, answer, hint: ex.hint, explanation: ex.explanation }
+    }
+  }
+  return ex
+}
+
+/** Exercises for a unit, written out when the course has moved on to a harder level than the unit's own */
+export function exercisesFor(course: Course, unit: Course['units'][number], exercises: Exercise[]): Exercise[] {
+  return (unit.level ?? 1) < (course.level ?? 1) ? exercises.map(hardenExercise) : exercises
+}
+
 /** Lenient answer comparison: ignores case, punctuation and extra spaces */
 export function sameAnswer(a: string, b: string): boolean {
   const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
@@ -197,14 +245,15 @@ function pickRoundRobin<T>(groups: T[][], n: number, rand: () => number): T[] {
 }
 
 /** Units that came with their own fresh quiz questions use those, otherwise the lesson exercises are reused */
-const quizPool = (u: Course['units'][number]): Exercise[][] => (u.quiz && u.quiz.length >= 3 ? [u.quiz] : u.lessons.map((l) => l.exercises))
+const quizPool = (course: Course, u: Course['units'][number]): Exercise[][] =>
+  (u.quiz && u.quiz.length >= 3 ? [u.quiz] : u.lessons.map((l) => l.exercises)).map((g) => exercisesFor(course, u, g))
 
 /** End of unit quiz: the unit's own quiz questions when it has them, plus one from the unit before */
 export function unitQuizExercises(course: Course, unitIndex: number, rand: () => number = Math.random) {
   const unit = course.units[unitIndex]
   const prev = course.units[unitIndex - 1]
-  const fromPrev = prev ? pickRoundRobin(quizPool(prev), 1, rand) : []
-  const fromUnit = pickRoundRobin(quizPool(unit), QUIZ_SIZE - fromPrev.length, rand)
+  const fromPrev = prev ? pickRoundRobin(quizPool(course, prev), 1, rand) : []
+  const fromUnit = pickRoundRobin(quizPool(course, unit), QUIZ_SIZE - fromPrev.length, rand)
   return shuffle([...fromUnit, ...fromPrev], rand)
 }
 
@@ -213,7 +262,7 @@ export function jumpTestExercises(course: Course, toUnitIndex: number, rand: () 
   const skipped = course.units.slice(0, toUnitIndex)
   const n = Math.min(10, Math.max(QUIZ_SIZE, skipped.length * 3))
   return pickRoundRobin(
-    skipped.flatMap((u) => quizPool(u)),
+    skipped.flatMap((u) => quizPool(course, u)),
     n,
     rand,
   )
