@@ -138,7 +138,7 @@ export default function Profile() {
         </div>
       </Card>
 
-      <Card>
+      <Card className="goal-card-wrap">
         <h2>Daily Goal</h2>
         <p className="tiny muted">How many lessons do you want to finish each day?</p>
         <div className="goal-options">
@@ -152,7 +152,7 @@ export default function Profile() {
       </Card>
 
 
-      <Card>
+      <Card className="settings-card">
         <h2>Settings</h2>
         <label className="toggle">
           <input type="checkbox" checked={s.sound} onChange={(e) => s.setSound(e.target.checked)} />
@@ -161,10 +161,10 @@ export default function Profile() {
         {resetAsk ? (
           <div className="confirm">
             <span className="small">Reset all XP, streaks and lesson progress?</span>
-            <button className="btn red small-btn" onClick={() => (s.resetProgress(), setResetAsk(false))}>
+            <button className="btn red" onClick={() => (s.resetProgress(), setResetAsk(false))}>
               Reset
             </button>
-            <button className="btn ghost small-btn" onClick={() => setResetAsk(false)}>
+            <button className="btn ghost" onClick={() => setResetAsk(false)}>
               Cancel
             </button>
           </div>
@@ -174,10 +174,10 @@ export default function Profile() {
           </button>
         )}
         <div className="backup-row">
-          <button className="btn ghost small-btn" onClick={backup}>
+          <button className="btn ghost " onClick={backup}>
             💾 Copy backup
           </button>
-          <button className="btn ghost small-btn" onClick={restore}>
+          <button className="btn ghost " onClick={restore}>
             ♻️ Restore backup
           </button>
         </div>
