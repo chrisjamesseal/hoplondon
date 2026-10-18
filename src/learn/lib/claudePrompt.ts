@@ -69,7 +69,7 @@ Exercises (mix all four types in every lesson)
   - Keep all four options the same length, tone and level of detail. The correct one must not be the longest, the most specific or the most hedged.
   - Spread the correct answer across positions 0 to 3 evenly.
   - At least half of the mcqs should be "which is the best action or explanation in this situation" scenarios where two options are tempting and one is clearly better for a stated reason.
-- tf: definitely true or definitely false. Make about half false, ideally popular myths.
+- tf: definitely true or definitely false. Make about half false, ideally popular myths. Mix the order unpredictably: never always put the false statement before the true one, never strictly alternate, and do not group the same answer together.
 - cloze: exactly one "___" gap; "answer" is the missing word or short phrase (often a key term); 3 plausible "distractors" of the same kind.
 - match: 3 or 4 pairs, such as terms and meanings or causes and effects, each side under 8 words.
 - Every explanation is one or two clear sentences on why the answer is right, adding a useful detail where it helps.

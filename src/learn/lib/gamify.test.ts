@@ -117,3 +117,24 @@ describe('unit quiz questions', () => {
     expect(qs.every((q) => q.type === 'tf' && q.statement.startsWith('fresh'))).toBe(true)
   })
 })
+
+describe('mixTrueFalse', () => {
+  const tf = (n: number, answer: boolean) => ({ type: 'tf' as const, statement: `s${n}`, answer })
+  const mcq = { type: 'mcq' as const, prompt: 'q', options: ['a', 'b'], answer: 0 }
+
+  it('keeps the same slots for each question type and the same questions', async () => {
+    const { mixTrueFalse } = await import('./gamify')
+    const list = [tf(1, false), mcq, tf(2, true), mcq]
+    const out = mixTrueFalse(list, 'lesson-a')
+    expect(out.map((e) => e.type)).toEqual(['tf', 'mcq', 'tf', 'mcq'])
+    expect(out.filter((e) => e.type === 'tf').map((e) => (e as { statement: string }).statement).sort()).toEqual(['s1', 's2'])
+  })
+
+  it('is stable for a lesson and not always false first', async () => {
+    const { mixTrueFalse } = await import('./gamify')
+    const list = [tf(1, false), tf(2, true)]
+    expect(mixTrueFalse(list, 'x')).toEqual(mixTrueFalse(list, 'x'))
+    const firstAnswers = new Set(Array.from({ length: 30 }, (_, i) => (mixTrueFalse(list, `lesson-${i}`)[0] as { answer: boolean }).answer))
+    expect(firstAnswers.size).toBe(2)
+  })
+})

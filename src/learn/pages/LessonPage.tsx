@@ -8,6 +8,7 @@ import {
   lessonsOn,
   flatLessons,
   isCourseComplete,
+  mixTrueFalse,
   jumpTestExercises,
   lessonXp,
   liveStreak,
@@ -107,7 +108,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         title: titleCase(lesson.title),
         emoji: pickEmoji(lesson.emoji, lesson.title),
         cards: [...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
-        exercises: lesson.exercises,
+        exercises: mixTrueFalse(lesson.exercises, lesson.id),
       }
     }
     if (tested) {

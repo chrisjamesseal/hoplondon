@@ -109,6 +109,37 @@ export function lessonsOn(day: string, byDay: Record<string, number>, progress: 
   return Math.max(recorded, fromProgress)
 }
 
+/** Small seeded random number generator, so the same lesson always gets the same order */
+function seeded(seed: string): () => number {
+  let h = 1779033703 ^ seed.length
+  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 3432918353)
+  let a = (h ^ (h >>> 16)) >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * Generated lessons tend to put their false statement before their true one. Shuffle the true or false
+ * questions between their own slots so the answer can't be guessed from the order. The seed keeps the
+ * order the same every time that lesson opens, so a paused lesson still resumes at the right question.
+ */
+export function mixTrueFalse(exercises: Exercise[], seed: string): Exercise[] {
+  const slots = exercises.flatMap((e, i) => (e.type === 'tf' ? [i] : []))
+  if (slots.length < 2) return exercises
+  const mixed = shuffle(
+    slots.map((i) => exercises[i]),
+    seeded(seed),
+  )
+  const out = [...exercises]
+  slots.forEach((slot, k) => (out[slot] = mixed[k]))
+  return out
+}
+
 /* ---------- unit quizzes and jumping ahead ---------- */
 
 /** Unit quizzes are stored in progress under this key, next to lesson ids */
