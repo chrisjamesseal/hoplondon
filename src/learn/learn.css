@@ -779,3 +779,7 @@ button:disabled { cursor: default; }
 .lesson.typing .check-inner > span:empty { display: none; }
 .lesson.typing .feedback { flex: 1; min-width: 0; }
 .job-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lesson.typing .check-bar { padding: 10px 16px 8px; }
+.lesson.typing .lesson-top { padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: 4px; }
+.lesson.typing .lesson-body { padding-top: 12px; padding-bottom: 20px; }
+.lesson.typing .ex-prompt { margin-bottom: 14px; }
