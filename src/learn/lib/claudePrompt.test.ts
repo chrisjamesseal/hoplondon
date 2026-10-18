@@ -48,6 +48,15 @@ describe('parseCourseJson', () => {
     expect(normalizeCourse(parsed, { kind: 'topic', label: 'Bees' }, 'claude').title).toBe('Bees')
   })
 
+  it('repairs curly quotes, trailing commas and cut off replies', () => {
+    const j = JSON.stringify(course)
+    const curly = j.replace(/"/g, '\u201C')
+    expect(() => parseCourseJson(curly)).not.toThrow()
+    expect(parseCourseJson(j.replace('}]}]}', '},]}]},'))).toEqual(course)
+    const cut = parseCourseJson('```json\n{"title":"T","units":[{"title":"U","lessons":[{"title":"L","teach":[],"exercises":[]},{"title":"half","te')
+    expect((cut as { units: unknown[] }).units.length).toBe(1)
+  })
+
   it('explains broken input', () => {
     expect(() => parseCourseJson('hello')).toThrow(/doesn't look like/)
     expect(() => parseCourseJson('{"title": ')).toThrow()

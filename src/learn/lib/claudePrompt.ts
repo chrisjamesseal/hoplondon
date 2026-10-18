@@ -118,26 +118,90 @@ ${RULES}
 Output
 - Reply in this chat with the JSON only, inside a single code block.
 - Write no other text before or after it. No greeting, no notes, no explanation.
-- Do not create a file.
+- Do not create a file, a canvas, a download link or a table.
 - Keep the JSON compact: no indentation and no blank lines.
+- The JSON must be strictly valid and parse with JSON.parse. Check it before you send it.
+- Use only straight double quotes (") around keys and strings, never curly quotes. Inside a string use an apostrophe (') or rewrite the sentence instead of a double quote.
+- No trailing commas, no comments, no ellipsis, no placeholders and no markdown inside the code block. Each string stays on one line, with no line breaks inside it.
+- Write true and false in lowercase with no quotes, and write answer numbers as plain numbers.
+- Send the whole JSON in one reply and finish every bracket. If it would be too long, write fewer lessons rather than stopping halfway.
 - Use exactly this format:
 
 ${formatFor(false)}`
 }
 
-/** Pulls the course JSON out of a file or pasted reply (tolerates code fences and extra text) */
-export function parseCourseJson(text: string): unknown {
-  const trimmed = text.trim().replace(/^﻿/, '')
-  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  const body = fenced ? fenced[1] : trimmed
-  const start = body.indexOf('{')
-  const end = body.lastIndexOf('}')
-  if (start < 0 || end <= start) throw new Error("That doesn't look like a Leap course. Paste the whole reply Claude gave you.")
-  try {
-    return JSON.parse(body.slice(start, end + 1))
-  } catch {
-    throw new Error("That JSON is incomplete or broken. Ask Claude to send the full JSON again.")
+const closeOpen = (src: string): string => {
+  // Drops a half written tail and closes any brackets a cut off reply left open
+  const stack: string[] = []
+  let inStr = false
+  let esc = false
+  let lastSafe = 0
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (ch === '\\') esc = true
+      else if (ch === '"') inStr = false
+      continue
+    }
+    if (ch === '"') inStr = true
+    else if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']')
+    else if (ch === '}' || ch === ']') {
+      stack.pop()
+      lastSafe = i + 1
+    }
   }
+  if (!stack.length) return src
+  // Cut back to the last finished object or array, then close what is still open
+  let cut = src.slice(0, lastSafe)
+  const open: string[] = []
+  let s2 = false
+  let e2 = false
+  for (const ch of cut) {
+    if (s2) {
+      if (e2) e2 = false
+      else if (ch === '\\') e2 = true
+      else if (ch === '"') s2 = false
+      continue
+    }
+    if (ch === '"') s2 = true
+    else if (ch === '{') open.push('}')
+    else if (ch === '[') open.push(']')
+    else if (ch === '}' || ch === ']') open.pop()
+  }
+  cut = cut.replace(/,\s*$/, '')
+  return cut + open.reverse().join('')
+}
+
+const tidy = (src: string): string =>
+  src
+    .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/\u00A0/g, ' ')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/,\s*([}\]])/g, '$1')
+
+/** Pulls the course JSON out of a file or pasted reply (tolerates code fences, extra text, curly quotes, trailing commas and cut off replies) */
+export function parseCourseJson(text: string): unknown {
+  const trimmed = text.trim().replace(/^\uFEFF/, '')
+  const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/i)
+  const body = fenced && fenced[1].includes('{') ? fenced[1] : trimmed
+  const start = body.indexOf('{')
+  if (start < 0) throw new Error("That doesn't look like a Leap course. Paste the whole reply Claude gave you.")
+  const end = body.lastIndexOf('}')
+  const whole = end > start ? body.slice(start, end + 1) : body.slice(start)
+  const attempts = [whole, tidy(whole), closeOpen(tidy(body.slice(start))), closeOpen(tidy(whole))]
+  // Raw line breaks inside strings are the other common slip
+  attempts.push(...attempts.map((a) => a.replace(/"((?:[^"\\\n]|\\.)*)\n/g, '"$1 ')))
+  for (const a of attempts) {
+    try {
+      const v = JSON.parse(a)
+      if (v && typeof v === 'object') return v
+    } catch {
+      /* try the next repair */
+    }
+  }
+  throw new Error('That JSON is incomplete or broken. Ask Claude to send the full JSON again.')
 }
 
 /** Prompt for a harder follow on that adds new units to a course the learner has finished */
@@ -166,8 +230,13 @@ Follow on rules
 Output
 - Reply in this chat with the JSON only, inside a single code block.
 - Write no other text before or after it. No greeting, no notes, no explanation.
-- Do not create a file.
+- Do not create a file, a canvas, a download link or a table.
 - Keep the JSON compact: no indentation and no blank lines.
+- The JSON must be strictly valid and parse with JSON.parse. Check it before you send it.
+- Use only straight double quotes (") around keys and strings, never curly quotes. Inside a string use an apostrophe (') or rewrite the sentence instead of a double quote.
+- No trailing commas, no comments, no ellipsis, no placeholders and no markdown inside the code block. Each string stays on one line, with no line breaks inside it.
+- Write true and false in lowercase with no quotes, and write answer numbers as plain numbers.
+- Send the whole JSON in one reply and finish every bracket. If it would be too long, write fewer lessons rather than stopping halfway.
 - Use exactly this format, but with only the new units:
 
 ${formatFor(true)}`
