@@ -799,3 +799,10 @@ button:disabled { cursor: default; }
 .course-row .row-between > strong { text-wrap: balance; }
 .course-row-main h1, .course-card h1, .path-title, .unit-row-main > strong, .unit-banner h2, h1 { text-wrap: balance; }
 .archive-link { margin-top: 16px; }
+
+/* Course cards stack their content, so the archive delete controls sit underneath */
+.course-row { flex-direction: column; align-items: stretch; flex-wrap: nowrap; gap: 0; }
+.course-row-main { width: 100%; flex: none; }
+.course-row .archive-delete, .course-row .archive-confirm { width: 100%; }
+.course-row.archived { opacity: 1; }
+.course-row.archived .course-row-main { opacity: 0.8; }
