@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { ClozeExercise, MatchExercise, McqExercise, TrueFalseExercise, TypeExercise } from '../types'
+import type { ClozeExercise, MatchExercise, OrderExercise, McqExercise, TrueFalseExercise, TypeExercise } from '../types'
 import { shuffle } from '../lib/gamify'
 import { BLANK } from '../lib/normalize'
 import { canSpeak, speak } from '../lib/speech'
@@ -158,6 +158,73 @@ export function Match({ ex, onDone, onTap }: { ex: MatchExercise; onDone: (mista
           ))}
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Rebuild a sequence: tap tiles in order, tap a placed tile to take it back, then check */
+export function Order({ ex, onTap, onCheck }: { ex: OrderExercise; onTap: () => void; onCheck: (correct: boolean) => void }) {
+  const tiles = useMemo(() => {
+    const ids = ex.items.map((_, i) => i)
+    let mixed = shuffle(ids)
+    // Never start already in the right order
+    for (let tries = 0; tries < 5 && mixed.every((v, i) => v === i); tries++) mixed = shuffle(ids)
+    return mixed
+  }, [ex])
+  const [placed, setPlaced] = useState<number[]>([])
+  const [checked, setChecked] = useState(false)
+  const free = tiles.filter((t) => !placed.includes(t))
+  const full = placed.length === ex.items.length
+
+  const add = (t: number) => {
+    if (checked) return
+    onTap()
+    setPlaced((p) => [...p, t])
+  }
+  const remove = (t: number) => {
+    if (checked) return
+    onTap()
+    setPlaced((p) => p.filter((x) => x !== t))
+  }
+  const check = () => {
+    setChecked(true)
+    onCheck(placed.every((t, i) => t === i))
+  }
+
+  return (
+    <div className="ex">
+      <h2 className="ex-title">{titleCase(ex.prompt)}</h2>
+      <p className="ex-prompt order-help">Tap the steps in order, first to last.</p>
+      <ol className="order-slots" aria-label="Your order">
+        {ex.items.map((_, i) => {
+          const t = placed[i]
+          const state = checked && t !== undefined ? (t === i ? 'right' : 'wrong') : ''
+          return (
+            <li key={i} className={`order-slot ${t === undefined ? 'empty' : ''} ${state}`}>
+              {t === undefined ? (
+                <span className="order-num">{i + 1}</span>
+              ) : (
+                <button type="button" className="order-tile placed" onClick={() => remove(t)} disabled={checked} aria-label={`Remove ${ex.items[t]}`}>
+                  <span className="order-num">{i + 1}</span>
+                  <RichText text={ex.items[t]} hints={false} />
+                </button>
+              )}
+            </li>
+          )
+        })}
+      </ol>
+      <div className="order-pool">
+        {free.map((t) => (
+          <button key={t} type="button" className="order-tile" onClick={() => add(t)} disabled={checked}>
+            <RichText text={ex.items[t]} hints={false} />
+          </button>
+        ))}
+      </div>
+      {!checked && (
+        <button type="button" className="btn green order-check" disabled={!full} onClick={check}>
+          Check
+        </button>
+      )}
     </div>
   )
 }

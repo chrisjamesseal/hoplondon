@@ -18,6 +18,7 @@ export const DEMO_COURSE: Course = {
         {
           id: 'demo-l1',
           title: 'How the Sun works',
+          why: 'Almost every energy source you use, from solar panels to the food you eat, started as sunlight. Knowing how the Sun works explains a lot about how Earth works.',
           teach: [
             'The Sun is an ordinary star that holds about **99.8% of all the mass** in the Solar System. Everything else, planets included, is a rounding error.',
             'It runs on **nuclear fusion**: in the core, hydrogen nuclei are forced together into helium, and a small amount of mass becomes energy. That is the same E = mc² idea behind nuclear power.',
@@ -50,6 +51,7 @@ export const DEMO_COURSE: Course = {
             { type: 'tf', statement: 'Mercury stays hot all the time because it is closest to the Sun.', answer: false, explanation: 'With almost no atmosphere to hold heat, its night side drops to around −180°C.' },
             { type: 'mcq', prompt: 'What gives Mars its red colour?', options: ['Iron oxide in its dust', 'Reflected light from the Sun', 'Red algae on the surface', 'Molten lava under the crust'], answer: 0, explanation: 'Iron oxide, the same compound as rust, coats much of the Martian surface.' },
             { type: 'tf', statement: 'Earth is one of the four rocky planets.', answer: true, explanation: 'Mercury, Venus, Earth and Mars are the rocky, or terrestrial, planets.' },
+            { type: 'order', prompt: 'Put the rocky planets in order from the Sun', items: ['Mercury', 'Venus', 'Earth', 'Mars'], explanation: 'Closest to furthest: Mercury, Venus, Earth, then Mars.' },
             { type: 'match', prompt: 'Match each planet to what defines it', pairs: [
               { left: 'Mercury', right: 'Huge day and night swings' },
               { left: 'Venus', right: 'Runaway greenhouse effect' },

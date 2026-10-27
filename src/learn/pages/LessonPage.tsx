@@ -25,19 +25,22 @@ import {
   unitQuizExercises,
 } from '../lib/gamify'
 import { GATE_KEY } from '../lib/gate'
-import { play } from '../lib/sound'
+import { play, playCombo } from '../lib/sound'
 import { titleCase } from '../lib/titleCase'
 import { clearPause, loadPause, savePause } from '../lib/pause'
 import { Confetti, ProgressBar } from '../components'
 import { pickEmoji } from '../lib/emoji'
 import { useKeyboardFit } from '../lib/keyboard'
-import { Cloze, clozeTiles, Match, Mcq, SpeakButton, TrueFalse, Typed } from './Exercises'
+import { Cloze, clozeTiles, Match, Mcq, Order, SpeakButton, TrueFalse, Typed } from './Exercises'
+import { comboLabel, exSig, frogLine, frogVerdict, pickPractice } from '../lib/engage'
+import { achievementStats, allAchievementStates } from '../lib/achievements'
 import { buildGlossary, GlossContext, plainText, RichText } from './RichText'
 
 export type LessonMode = 'lesson' | 'practice' | 'quiz' | 'jump'
 
 interface TeachCard {
   text?: string
+  why?: boolean
   phrase?: Phrase
 }
 
@@ -88,7 +91,7 @@ function maxHints(ex: Exercise, tiles: string[]): number {
 
 /** The nudge shown after the first hint. Written answers fall back to the word length. */
 function hintText(ex: Exercise, hints: number): string {
-  if (ex.type === 'match' || hints < 1) return ''
+  if (ex.type === 'match' || ex.type === 'order' || hints < 1) return ''
   if (ex.type === 'type') return ex.hint ?? `${ex.answer.length} letters`
   return ex.hint ?? ''
 }
@@ -107,6 +110,8 @@ function correctText(ex: Exercise): string {
     case 'cloze':
     case 'type':
       return ex.answer
+    case 'order':
+      return ex.items.map((t, i) => `${i + 1}. ${t}`).join('   ')
     case 'match':
       return ''
   }
@@ -142,7 +147,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         key: lesson.id,
         title: titleCase(lesson.title),
         emoji: pickEmoji(lesson.emoji, lesson.title),
-        cards: [...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
+        cards: [...(lesson.why ? [{ text: lesson.why, why: true } as TeachCard] : []), ...lesson.teach.map((text): TeachCard => ({ text })), ...(lesson.phrases ?? []).map((phrase): TeachCard => ({ phrase }))],
         exercises: (() => {
           const unit = course.units.find((u) => u.lessons.some((l) => l.id === lesson.id)) ?? course.units[0]
           const eased = easeIntoTyping(course, unit, unit.lessons.findIndex((l) => l.id === lesson.id), exercisesFor(course, unit, lesson.exercises), lesson.id)
@@ -169,7 +174,8 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
     const lessons = flatLessons(activeCourse)
     const done = lessons.filter((l) => store.progress[l.id]?.completions)
     const pool = (done.length ? done : lessons.slice(0, 1)).flatMap((l) => exercisesFor(activeCourse, activeCourse.units.find((u) => u.lessons.some((x) => x.id === l.id)) ?? activeCourse.units[0], l.exercises))
-    return { course: activeCourse, title: 'Practice', emoji: '💪', cards: [], exercises: shuffle(pool).slice(0, 8) }
+    const weak = new Set(store.weak ?? [])
+    return { course: activeCourse, title: weak.size ? 'Weak Spots' : 'Practice', emoji: '💪', cards: [], exercises: pickPractice(pool.map((ex) => ({ ex })), weak, 8, shuffle).map((p) => p.ex) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, lessonId, unitId])
 
@@ -199,6 +205,8 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const [startedAt] = useState(resume?.startedAt ?? Date.now())
   const [earned, setEarned] = useState({ xp: 0, accuracy: 0, secs: 0, correct: 0 })
   const [quitAsk, setQuitAsk] = useState(false)
+  const [combo, setCombo] = useState(0)
+  const [unlocked, setUnlocked] = useState<string[]>([])
 
   const item = queue[idx]
   const typing = phase !== 'teach' && item?.ex.type === 'type'
@@ -214,6 +222,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         setEarned({ ...result, xp: 0 })
         return setPhase('failed')
       }
+      const before = allAchievementStates(achievementStats(useLearn.getState()))
       let xp = 0
       if (mode === 'practice') {
         xp = 5
@@ -228,6 +237,8 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         store.completeLesson(session.key, accuracy, xp)
         clearPause()
       }
+      const after = allAchievementStates(achievementStats(useLearn.getState()))
+      setUnlocked(after.flatMap((st, i) => (st.level > before[i].level ? [`${st.a.icon} ${st.a.name} level ${st.level}`] : [])))
       setEarned({ ...result, xp })
       play(store.sound, 'complete')
       setPhase('done')
@@ -240,7 +251,17 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       if (!item) return
       const ex = item.ex
       const note = ex.type !== 'match' ? ex.explanation : undefined
-      play(store.sound, correct ? 'correct' : 'wrong')
+      const first = correct && !missed.has(item.key) && hints === 0
+      if (first) {
+        setCombo(combo + 1)
+        if (combo + 1 >= 3) playCombo(store.sound, combo + 1)
+        else play(store.sound, 'correct')
+      } else {
+        if (!correct) setCombo(0)
+        play(store.sound, correct ? 'correct' : 'wrong')
+      }
+      if (mode === 'practice' && correct) store.clearWeak(exSig(ex))
+      if (!correct && ex.type !== 'match') store.addWeak(exSig(ex))
       // Lessons only count a question once it's right; tests count every answer
       if (correct || tested) setSolved((n) => n + 1)
       if (correct) {
@@ -255,7 +276,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       if (usesHearts) store.loseHeart()
       setResult({ correct: false, note })
     },
-    [hints, item, missed, store, tested, usesHearts],
+    [combo, hints, item, missed, mode, store, tested, usesHearts],
   )
 
   const check = useCallback(() => {
@@ -309,9 +330,9 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         if (e.key === 'ArrowLeft') goTeach(-1)
       }
       if (phase !== 'quiz' || !item) return
-      if (e.key === 'Enter') result ? next() : check()
+      if (e.key === 'Enter') result ? next() : item.ex.type === 'order' ? undefined : check()
       const n = Number(e.key)
-      if (!result && n >= 1 && n <= 4 && item.ex.type !== 'type') {
+      if (!result && n >= 1 && n <= 4 && item.ex.type !== 'type' && item.ex.type !== 'order') {
         const max = item.ex.type === 'mcq' ? item.ex.options.length : item.ex.type === 'tf' ? 2 : item.tiles.length
         if (n <= max && item.ex.type !== 'match') setChoice(n - 1)
       }
@@ -462,6 +483,18 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
               </strong>
             </div>
           </div>
+          <p className="frog-verdict">
+            <span aria-hidden>🐸</span> {frogVerdict(earned.accuracy)}
+          </p>
+          {unlocked.length > 0 && (
+            <div className="unlocked" role="status">
+              {unlocked.map((u) => (
+                <span key={u} className="unlocked-chip">
+                  🏅 Unlocked: {u}
+                </span>
+              ))}
+            </div>
+          )}
           <p className="streak-line">🔥 {streak} day streak</p>
           {cp && course && (
             <div className="done-course">
@@ -530,12 +563,12 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
           )}
           {phase === 'teach' && card && (
             <div className="teach">
-              <div className="teach-label">💡 Learn · {session.title}</div>
+              <div className="teach-label">{card.why ? '🌍 Why It Matters' : '💡 Learn'} · {session.title}</div>
               <div className="teach-body">
                 <div key={`art-${teachIdx}`} className="teach-art" aria-hidden>
                   {session.emoji}
                 </div>
-                <div key={teachIdx} className={`teach-card pop ${card.phrase ? 'phrase-card' : ''}`}>
+                <div key={teachIdx} className={`teach-card pop ${card.phrase ? 'phrase-card' : ''} ${card.why ? 'why-card' : ''}`}>
                   {card.phrase ? (
                     <>
                       <div className="phrase-text">
@@ -613,6 +646,9 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
                 />
               )}
               {hintsOn && hints > 0 && !result && hintText(item.ex, hints) && <p className="hint-note">💡 {hintText(item.ex, hints)}</p>}
+              {item.ex.type === 'order' && (
+                <Order key={`${idx}-${item.key}`} ex={item.ex} onTap={() => play(store.sound, 'tap')} onCheck={grade} />
+              )}
               {item.ex.type === 'match' && (
                 <Match
                   ex={item.ex}
@@ -628,7 +664,11 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
                     if (mistakes) setMissed((m) => new Set(m).add(item.key))
                     play(store.sound, 'correct')
                     setSolved((n) => n + 1)
-                    if (!mistakes && !missed.has(item.key)) setFirstTry((n) => n + 1)
+                    if (!mistakes && !missed.has(item.key)) {
+                      setFirstTry((n) => n + 1)
+                      setCombo(combo + 1)
+                    }
+                    if (mistakes) setCombo(0)
                     setResult({ correct: true, note: mistakes ? `All matched, with ${mistakes} slip${mistakes > 1 ? 's' : ''}.` : 'Every pair first time!' })
                   }}
                 />
@@ -657,8 +697,15 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
               <>
                 <div className="feedback">
                   <div className="feedback-icon">{result.correct ? '✓' : '✕'}</div>
-                  <div>
-                    <strong>{result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not Quite'}</strong>
+                  <div aria-live="polite">
+                    <strong>
+                      <span className={`frog ${result.correct ? 'happy' : 'sad'}`} aria-hidden>
+                        🐸
+                      </span>{' '}
+                      {result.correct ? PRAISE[(solved + idx) % PRAISE.length] : 'Not Quite'}
+                    </strong>
+                    <p className="frog-line">{frogLine(result.correct, solved + idx)}</p>
+                    {result.correct && comboLabel(combo) && <span className="combo-chip">🔥 {comboLabel(combo)}</span>}
                     {!result.correct && item && correctText(item.ex) && (
                       <p className="fb-answer">
                         <span className="fb-label">Correct answer</span>
@@ -688,7 +735,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
                 ) : (
                   <span />
                 )}
-                {item?.ex.type !== 'match' && (
+                {item?.ex.type !== 'match' && item?.ex.type !== 'order' && (
                   <button className="btn green" disabled={item?.ex.type === 'type' ? !typed.trim() : choice === null} onClick={check}>
                     Check
                   </button>

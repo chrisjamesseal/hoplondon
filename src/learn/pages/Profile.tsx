@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLearn } from '../store'
 import { dayKey, levelInfo, lessonsOn, liveStreak } from '../lib/gamify'
@@ -11,6 +11,46 @@ const GOALS = [
   { n: 3, label: 'Serious' },
   { n: 5, label: 'Intense' },
 ]
+
+interface InstallEvent extends Event {
+  prompt: () => Promise<void>
+}
+
+/** Puts the Leap frog on the home screen: one tap on Android, steps on iPhone */
+function InstallCard() {
+  const [evt, setEvt] = useState<InstallEvent | null>(null)
+  const standalone = typeof window !== 'undefined' && (window.matchMedia?.('(display-mode: standalone)').matches || (navigator as { standalone?: boolean }).standalone)
+  useEffect(() => {
+    const on = (e: Event) => {
+      e.preventDefault()
+      setEvt(e as InstallEvent)
+    }
+    window.addEventListener('beforeinstallprompt', on)
+    return () => window.removeEventListener('beforeinstallprompt', on)
+  }, [])
+  if (standalone) return null
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  return (
+    <Card className="install-card">
+      <div className="install-row">
+        <span className="install-icon" aria-hidden>
+          🐸
+        </span>
+        <div className="grow">
+          <h2>Add Leap to Your Home Screen</h2>
+          <p className="muted small">
+            {ios ? 'Tap the Share button, then Add to Home Screen. Leap opens full screen like an app.' : 'Open it like an app, full screen, one tap away.'}
+          </p>
+        </div>
+      </div>
+      {evt && (
+        <button className="btn green wide" onClick={() => evt.prompt().then(() => setEvt(null))}>
+          Install Leap
+        </button>
+      )}
+    </Card>
+  )
+}
 
 export default function Profile() {
   const s = useLearn()
@@ -66,6 +106,8 @@ export default function Profile() {
           <ProgressBar value={lvl.into / lvl.needed} color="blue" label="Level progress" />
         </div>
       </Card>
+
+      <InstallCard />
 
       <div className="stat-grid">
         <Card className="stat-tile">
