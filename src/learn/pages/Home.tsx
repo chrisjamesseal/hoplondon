@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
-import { courseProgress, dayKey, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
+import { courseProgress, dayKey, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
@@ -10,6 +11,8 @@ export default function Home() {
   const course = useActiveCourse()
   const { hearts, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak } = useLearn()
   const navigate = useNavigate()
+  const markStepsDone = useLearn((s) => s.markStepsDone)
+  const [catchUp, setCatchUp] = useState<number | null>(null)
   const streak = liveStreak(useLearn((s) => s.streak), useLearn((s) => s.lastActiveDay), dayKey())
 
   if (!course) {
@@ -141,6 +144,41 @@ export default function Home() {
       <Link to="/path" className="btn blue wide">
         🗺️ Open Lesson Path
       </Link>
+      <button className="btn ghost wide delete-course" onClick={() => setCatchUp(cp.done)}>
+        ✅ Set my progress
+      </button>
+      {catchUp !== null && (
+        <div className="modal-bg" onClick={() => setCatchUp(null)}>
+          <div className="modal" role="dialog" aria-label="Set my progress" onClick={(e) => e.stopPropagation()}>
+            <div className="big-emoji">✅</div>
+            <h2>How Far Were You?</h2>
+            <p className="muted">Mark the first lessons as done. Anything already finished stays finished.</p>
+            <div className="stepper">
+              <button className="btn ghost" aria-label="One fewer" onClick={() => setCatchUp(Math.max(0, catchUp - 1))}>
+                −
+              </button>
+              <strong className="stepper-n">
+                {catchUp} of {cp.total}
+              </strong>
+              <button className="btn ghost" aria-label="One more" onClick={() => setCatchUp(Math.min(cp.total, catchUp + 1))}>
+                +
+              </button>
+            </div>
+            <button
+              className="btn green wide"
+              onClick={() => {
+                markStepsDone(stepsThroughLesson(course, catchUp))
+                setCatchUp(null)
+              }}
+            >
+              Mark as done
+            </button>
+            <button className="btn ghost wide" onClick={() => setCatchUp(null)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
       <Link to={`/rewrite/${course.id}`} className="btn ghost wide delete-course">
         ✏️ Rewrite course
       </Link>

@@ -306,6 +306,18 @@ export function jumpTestExercises(course: Course, toUnitIndex: number, rand: () 
 }
 
 /** Everything before a unit, for marking as done after passing a jump test */
+/** Every step up to and including the nth lesson, for catching a course up to where the learner already was */
+export function stepsThroughLesson(course: Course, n: number): string[] {
+  const out: string[] = []
+  let seen = 0
+  if (n <= 0) return out
+  for (const s of pathSteps(course)) {
+    out.push(s.id)
+    if (s.kind === 'lesson' && ++seen >= n) break
+  }
+  return out
+}
+
 export function stepsBeforeUnit(course: Course, unitIndex: number): string[] {
   return pathSteps(course)
     .filter((s) => s.unitIndex < unitIndex)

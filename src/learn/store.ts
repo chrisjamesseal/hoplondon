@@ -38,6 +38,8 @@ interface LearnState {
   finishPractice: (xp: number) => void
   /** Marks steps as done after a jump test, without touching ones already done */
   skipSteps: (ids: string[]) => void
+  /** Marks steps as done with no XP or streak, for catching a course up to where the learner was */
+  markStepsDone: (ids: string[]) => void
   archiveCourse: (id: string) => void
   unarchiveCourse: (id: string) => void
   syncHearts: () => void
@@ -156,6 +158,14 @@ export const useLearn = create<LearnState>()(
             if (!progress[id]?.completions) progress[id] = { completions: 1, bestAccuracy: 0, lastCompleted: today, skipped: true }
           }
           return { progress, streak: bumpStreak(s.streak, s.lastActiveDay, today), bestStreak: Math.max(s.bestStreak ?? 0, bumpStreak(s.streak, s.lastActiveDay, today)), lastActiveDay: today }
+        }),
+      markStepsDone: (ids) =>
+        set((s) => {
+          const progress = { ...s.progress }
+          for (const id of ids) {
+            if (!progress[id]?.completions) progress[id] = { completions: 1, bestAccuracy: 0, lastCompleted: dayKey(), skipped: true }
+          }
+          return { progress }
         }),
       archiveCourse: (id) =>
         set((s) => {

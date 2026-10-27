@@ -31,3 +31,13 @@ describe('order exercises', () => {
     expect(normalizeExercise({ type: 'order', prompt: 'Order', items: ['a', 'b'] })).toBeNull()
   })
 })
+
+import { stepsThroughLesson } from './gamify'
+describe('stepsThroughLesson', () => {
+  const c = { units: [{ id: 'u1', lessons: [{ id: 'a' }, { id: 'b' }] }, { id: 'u2', lessons: [{ id: 'c' }] }] } as unknown as Parameters<typeof stepsThroughLesson>[0]
+  it('includes the quiz between units but stops at the nth lesson', () => {
+    expect(stepsThroughLesson(c, 0)).toEqual([])
+    expect(stepsThroughLesson(c, 2)).toEqual(['a', 'b'])
+    expect(stepsThroughLesson(c, 3)).toEqual(['a', 'b', 'quiz:u1', 'c'])
+  })
+})
