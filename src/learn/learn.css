@@ -806,3 +806,8 @@ button:disabled { cursor: default; }
 .course-row .archive-delete, .course-row .archive-confirm { width: 100%; }
 .course-row.archived { opacity: 1; }
 .course-row.archived .course-row-main { opacity: 0.8; }
+
+/* Teach cards: one short paragraph per sentence */
+.teach-card:not(.phrase-card) { font-size: 20px; line-height: 1.5; padding: 24px 22px; }
+.teach-para { margin: 0; }
+.teach-para + .teach-para { margin-top: 18px; }
