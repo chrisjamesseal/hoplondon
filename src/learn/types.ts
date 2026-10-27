@@ -47,7 +47,16 @@ export interface TypeExercise {
   explanation?: string
 }
 
-export type Exercise = McqExercise | TrueFalseExercise | ClozeExercise | MatchExercise | TypeExercise
+/** Steps or events given in the right order; the learner rebuilds the sequence from shuffled tiles */
+export interface OrderExercise {
+  type: 'order'
+  prompt: string
+  /** Correct order, first to last */
+  items: string[]
+  explanation?: string
+}
+
+export type Exercise = McqExercise | TrueFalseExercise | ClozeExercise | MatchExercise | TypeExercise | OrderExercise
 
 /** A phrase to learn in a language course */
 export interface Phrase {
@@ -64,6 +73,8 @@ export interface Lesson {
   title: string
   /** Picture shown big on the teach cards and on the path node */
   emoji?: string
+  /** One or two lines on why this matters in real life, shown as the first card */
+  why?: string
   /** Short teaching cards shown before the exercises */
   teach: string[]
   /** Phrase cards shown after the teach cards (language courses) */

@@ -32,6 +32,7 @@ const FORMAT_BASE = `{
         {
           "title": "Max 5 words",
           "emoji": "🔭",
+          "why": "One or two sentences on why this matters in real life.",
           "teach": ["Short teaching card with a **key term** highlighted.", "Another short card."],
           "phrases": [{ "text": "Wie viel kostet das?", "say": "vee FEEL KOS-tet dahs", "meaning": "How much is it?", "words": [{ "w": "Wie viel", "m": "how much" }, { "w": "kostet", "m": "costs" }, { "w": "das", "m": "that" }] }],
           "exercises": [
@@ -39,7 +40,8 @@ const FORMAT_BASE = `{
             { "type": "mcq", "prompt": "Listen. What does it mean?", "audio": "Wie viel kostet das?", "options": ["How much is it?", "Where is the station?", "Can I pay by card?", "What time is it?"], "answer": 0, "explanation": "Why." },
             { "type": "tf", "statement": "A clear statement.", "answer": true, "explanation": "Why." },
             { "type": "cloze", "sentence": "A sentence with one ___ gap.", "answer": "word", "distractors": ["other", "wrong", "words"], "explanation": "Why." },
-            { "type": "match", "prompt": "Match the pairs", "pairs": [{ "left": "Term", "right": "Short meaning" }] },__TYPE__
+            { "type": "match", "prompt": "Match the pairs", "pairs": [{ "left": "Term", "right": "Short meaning" }] },
+            { "type": "order", "prompt": "Put these steps in the right order", "items": ["First step", "Second step", "Third step", "Fourth step"], "explanation": "Why this order." },__TYPE__
           ]
         }
       ]
@@ -53,6 +55,10 @@ const RULES = `Audience
 - Keep it easy to follow: short sentences, one idea at a time, and plain English. Explain any jargon the first time it appears, then use the proper term so the learner can hold their own in real conversations.
 - Use examples from adult life: work, money, health, home, travel, relationships and current affairs.
 - Prefer real world examples: named companies, products, events, people and real figures, as long as you are certain they are accurate. Never invent a statistic or a case study.
+
+Lesson hook
+- Give every lesson a "why": one or two plain sentences on why it matters in real life, for example a decision it helps with or a mistake it avoids. No hype.
+- Use an "order" exercise (3 to 5 short items, listed in the correct order) in a lesson only when the topic has a true sequence, such as steps in a process or stages in a timeline. Skip it otherwise.
 
 Depth
 - Go beyond trivia. Cover the why and the how: causes and effects, trade-offs, common misconceptions and practical takeaways the learner could actually use.
@@ -332,7 +338,7 @@ ${
   harder
     ? `- This is a harder level. Make "type" exercises the backbone: at least half of every lesson's exercises and most of each unit's "quiz" must be "type", where the learner writes the answer. The learner sees only the first letter and has a hint button, so the answer must be one word or a short phrase of up to three words with one clear correct form. List other wordings that should count in "accept", and give every "type" exercise a "hint".
 - Use "mcq" only for scenario judgement. Questions that check a fact, term, name or number must be "type".`
-    : `- This is the easy level: use "mcq", "tf", "cloze" and "match" only. Do not use "type" exercises.`
+    : `- This is the easy level: use "mcq", "tf", "cloze", "match" and "order" only. Do not use "type" exercises.`
 }
 
 ${OUTPUT_RULES}

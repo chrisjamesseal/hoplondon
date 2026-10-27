@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import type { Course, LessonProgress, Unit } from './types'
 import { DEMO_COURSE } from './demo'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
+import { WEAK_CAP } from './lib/engage'
 import { bumpStreak, dayKey, lessonsOn, MAX_HEARTS, regenHearts } from './lib/gamify'
 
 interface LearnState {
@@ -23,6 +24,8 @@ interface LearnState {
   sound: boolean
   /** Finished courses tucked away on the Courses page */
   archived: string[]
+  /** Questions answered wrong, brought back first in practice until they are right */
+  weak: string[]
 
   addCourse: (c: Course) => void
   /** Adds new units to the end of a course and raises its level, keeping all progress */
@@ -43,6 +46,8 @@ interface LearnState {
   setDailyGoal: (n: number) => void
   setDailyLessons: (n: number) => void
   setSound: (on: boolean) => void
+  addWeak: (sig: string) => void
+  clearWeak: (sig: string) => void
   resetProgress: () => void
 }
 
@@ -64,6 +69,7 @@ export const useLearn = create<LearnState>()(
       dailyLessons: 2,
       sound: true,
       archived: [],
+      weak: [],
 
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
       extendCourse: (id, units) =>
@@ -173,11 +179,13 @@ export const useLearn = create<LearnState>()(
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
       setDailyLessons: (dailyLessons) => set({ dailyLessons }),
       setSound: (sound) => set({ sound }),
-      resetProgress: () => set({ progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, bestStreak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
+      addWeak: (sig) => set((s) => ((s.weak ?? []).includes(sig) ? s : { weak: [...(s.weak ?? []), sig].slice(-WEAK_CAP) })),
+      clearWeak: (sig) => set((s) => ((s.weak ?? []).includes(sig) ? { weak: (s.weak ?? []).filter((x) => x !== sig) } : s)),
+      resetProgress: () => set({ weak: [], progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, bestStreak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
     }),
     {
       name: 'leap-v1',
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         // v1 stored a Claude API key; drop it
         const { apiKey: _drop, ...rest } = (persisted ?? {}) as Record<string, unknown>

@@ -27,6 +27,18 @@ export const sounds = {
   complete: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i * 0.12, 0.3, 'triangle')),
 }
 
+/** Rising run of notes: the longer the combo, the higher it climbs */
+export function playCombo(enabled: boolean, n: number) {
+  if (!enabled) return
+  try {
+    const base = [523, 587, 659, 784, 880, 1047, 1175]
+    const top = Math.min(base.length, Math.max(2, n - 1))
+    base.slice(Math.max(0, top - 3), top).forEach((f, i) => tone(f, i * 0.07, 0.16, 'triangle', 0.1))
+  } catch {
+    // audio can be blocked until the first user gesture
+  }
+}
+
 export function play(enabled: boolean, name: keyof typeof sounds) {
   if (!enabled) return
   try {

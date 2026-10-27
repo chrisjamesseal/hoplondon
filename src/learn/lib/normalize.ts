@@ -59,6 +59,12 @@ export function normalizeExercise(raw: unknown): Exercise | null {
       if (pairs.length < 2) return null
       return { type: 'match', prompt: str(r.prompt) || 'Match the pairs', pairs }
     }
+    case 'order': {
+      const items = [...new Set(strs(r.items))].map((t) => t.slice(0, 80)).slice(0, 6)
+      const prompt = str(r.prompt)
+      if (!prompt || items.length < 3) return null
+      return { type: 'order', prompt, items, explanation }
+    }
     case 'type': {
       const prompt = str(r.prompt)
       const answer = str(r.answer)
@@ -96,6 +102,7 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
             id: uid('l_'),
             title: str(lr.title) || 'Lesson',
             emoji: emojiOf(lr.emoji),
+            why: str(lr.why).slice(0, 220) || undefined,
             teach: strs(lr.teach).slice(0, 4),
             phrases: phrasesOf(lr.phrases),
             exercises: (Array.isArray(lr.exercises) ? lr.exercises : []).map(normalizeExercise).filter((e): e is Exercise => !!e),
