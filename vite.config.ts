@@ -6,11 +6,8 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
-      // Two apps share one build: hop (budgeting) at / and leap (learning) at /learn/
-      input: {
-        main: resolve(import.meta.dirname, 'index.html'),
-        learn: resolve(import.meta.dirname, 'learn/index.html'),
-      },
+      // Named "learn" so the built files are assets/learn-*.js, which the auto update check looks for
+      input: { learn: resolve(import.meta.dirname, 'index.html') },
     },
   },
 })
