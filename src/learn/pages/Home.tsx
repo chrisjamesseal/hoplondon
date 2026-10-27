@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
-import { courseProgress, dayKey, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
+import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
@@ -13,6 +13,7 @@ export default function Home() {
   const navigate = useNavigate()
   const markStepsDone = useLearn((s) => s.markStepsDone)
   const [catchUp, setCatchUp] = useState<number | null>(null)
+  const [byUnit, setByUnit] = useState(true)
   const streak = liveStreak(useLearn((s) => s.streak), useLearn((s) => s.lastActiveDay), dayKey())
 
   if (!course) {
@@ -144,7 +145,7 @@ export default function Home() {
       <Link to="/path" className="btn blue wide">
         🗺️ Open Lesson Path
       </Link>
-      <button className="btn ghost wide delete-course" onClick={() => setCatchUp(cp.done)}>
+      <button className="btn ghost wide delete-course" onClick={() => (setByUnit(true), setCatchUp(Math.min(course.units.length, Math.max(1, (nextStep(course, progress)?.unitIndex ?? 0) + 1))))}>
         ✅ Set my progress
       </button>
       {catchUp !== null && (
@@ -152,22 +153,32 @@ export default function Home() {
           <div className="modal" role="dialog" aria-label="Set my progress" onClick={(e) => e.stopPropagation()}>
             <div className="big-emoji">✅</div>
             <h2>How Far Were You?</h2>
-            <p className="muted">Mark the first lessons as done. Anything already finished stays finished.</p>
+            <p className="muted">
+              {byUnit ? 'Pick the unit you are on. Everything before it is marked as done.' : 'Mark the first lessons as done.'} Anything already finished stays finished.
+            </p>
+            <div className="seg" role="group" aria-label="Set progress by">
+              <button className={`btn ${byUnit ? 'blue' : 'ghost'}`} aria-pressed={byUnit} onClick={() => (setByUnit(true), setCatchUp(Math.min(catchUp || 1, course.units.length)))}>
+                By unit
+              </button>
+              <button className={`btn ${byUnit ? 'ghost' : 'blue'}`} aria-pressed={!byUnit} onClick={() => setByUnit(false)}>
+                By lesson
+              </button>
+            </div>
             <div className="stepper">
-              <button className="btn ghost" aria-label="One fewer" onClick={() => setCatchUp(Math.max(0, catchUp - 1))}>
+              <button className="btn ghost" aria-label="One fewer" onClick={() => setCatchUp(Math.max(byUnit ? 1 : 0, catchUp - 1))}>
                 −
               </button>
               <strong className="stepper-n">
-                {catchUp} of {cp.total}
+                {byUnit ? `Unit ${catchUp} of ${course.units.length}` : `${catchUp} of ${cp.total}`}
               </strong>
-              <button className="btn ghost" aria-label="One more" onClick={() => setCatchUp(Math.min(cp.total, catchUp + 1))}>
+              <button className="btn ghost" aria-label="One more" onClick={() => setCatchUp(Math.min(byUnit ? course.units.length : cp.total, catchUp + 1))}>
                 +
               </button>
             </div>
             <button
               className="btn green wide"
               onClick={() => {
-                markStepsDone(stepsThroughLesson(course, catchUp))
+                markStepsDone(byUnit ? stepsBeforeUnit(course, catchUp - 1) : stepsThroughLesson(course, catchUp))
                 setCatchUp(null)
               }}
             >

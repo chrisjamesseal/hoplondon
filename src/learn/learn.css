@@ -872,3 +872,5 @@ button:disabled { cursor: default; }
 .stepper { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 6px 0 16px; }
 .stepper .btn { min-width: 56px; font-size: 24px; padding: 8px 0; }
 .stepper-n { font-size: 24px; min-width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
+.seg { display: flex; gap: 8px; margin-bottom: 12px; }
+.seg .btn { flex: 1; }
