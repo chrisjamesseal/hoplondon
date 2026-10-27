@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useLearn } from '../store'
+import { mergeBackup } from '../lib/backup'
 import { dayKey, levelInfo, lessonsOn, liveStreak } from '../lib/gamify'
 import { Card, ProgressBar } from '../components'
 import { achievementStats, allAchievementStates } from '../lib/achievements'
@@ -71,8 +72,9 @@ export default function Profile() {
       const text = (await navigator.clipboard.readText()).trim()
       const parsed = JSON.parse(text)
       if (!parsed?.state?.courses) throw new Error()
-      localStorage.setItem('leap-v1', text)
-      location.reload()
+      // Merge, never overwrite: the furthest progress from either side wins
+      useLearn.setState(mergeBackup(useLearn.getState(), parsed.state))
+      setBackupMsg('Restored. Courses and the furthest progress from both are kept.')
     } catch {
       setBackupMsg('Copy your backup first, then tap Restore.')
     }
