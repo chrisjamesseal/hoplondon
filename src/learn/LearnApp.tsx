@@ -80,15 +80,17 @@ function HeartsRow() {
 
 export default function LearnApp() {
   const syncHearts = useLearn((s) => s.syncHearts)
+  const useFreezeIfNeeded = useLearn((s) => s.useFreezeIfNeeded)
   const location = useLocation()
   const { pathname } = location
-  const inLesson = /^\/(lesson|practice|quiz|jump)/.test(pathname)
+  const inLesson = /^\/(lesson|practice|review|quiz|jump)/.test(pathname)
 
   useEffect(() => {
     syncHearts()
+    useFreezeIfNeeded()
     const t = setInterval(syncHearts, 30_000)
     return () => clearInterval(t)
-  }, [syncHearts])
+  }, [syncHearts, useFreezeIfNeeded])
 
   useEffect(() => window.scrollTo(0, 0), [pathname])
 
@@ -98,6 +100,7 @@ export default function LearnApp() {
       <Routes key={location.key}>
         <Route path="/lesson/:lessonId" element={<LessonPage />} />
         <Route path="/practice" element={<LessonPage mode="practice" />} />
+        <Route path="/review" element={<LessonPage mode="practice" review />} />
         <Route path="/quiz/:unitId" element={<LessonPage mode="quiz" />} />
         <Route path="/jump/:unitId" element={<LessonPage mode="jump" />} />
       </Routes>
@@ -123,6 +126,7 @@ export default function LearnApp() {
         <main className="page">
           {!/^\/(lesson|quiz|practice|jump)/.test(pathname) && <JobBanner />}
           {!/^\/(courses|profile|create|$)/.test(pathname) && <HeartsRow />}
+          <div key={pathname} className="route-fade">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/path" element={<Path />} />
@@ -136,6 +140,7 @@ export default function LearnApp() {
             <Route path="/extend/:courseId" element={<ExtendCourse />} />
             <Route path="/rewrite/:courseId" element={<RewriteCourse />} />
           </Routes>
+          </div>
         </main>
       </div>
     </div>

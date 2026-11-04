@@ -5,6 +5,8 @@ import { mergeBackup } from '../lib/backup'
 import { dayKey, levelInfo, lessonsOn, liveStreak } from '../lib/gamify'
 import { Card, ProgressBar } from '../components'
 import { achievementStats, allAchievementStates } from '../lib/achievements'
+import { reminderIcs } from '../lib/reminder'
+import { MAX_FREEZES } from '../lib/freeze'
 
 const GOALS = [
   { n: 1, label: 'Casual' },
@@ -49,6 +51,39 @@ function InstallCard() {
           Install Leap
         </button>
       )}
+    </Card>
+  )
+}
+
+/** A daily calendar event so the phone does the reminding */
+function ReminderCard() {
+  const [time, setTime] = useState('19:00')
+  const [msg, setMsg] = useState('')
+  function add() {
+    const url = location.href.split('#')[0]
+    const blob = new Blob([reminderIcs(time, url)], { type: 'text/calendar' })
+    const href = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = href
+    a.download = 'leap-reminder.ics'
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(href), 5000)
+    setMsg('Open the file to add a daily event to your calendar.')
+  }
+  return (
+    <Card>
+      <h2>Daily Reminder</h2>
+      <p className="muted small">Adds a repeating event to your calendar, so your phone nudges you at the same time every day.</p>
+      <div className="reminder-row">
+        <label htmlFor="remind-time" className="small">
+          Remind me at
+        </label>
+        <input id="remind-time" className="input time-input" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+        <button className="btn blue" onClick={add}>
+          Add
+        </button>
+      </div>
+      {msg && <p className="tiny muted">{msg}</p>}
     </Card>
   )
 }
@@ -110,11 +145,12 @@ export default function Profile() {
       </Card>
 
       <InstallCard />
+      <ReminderCard />
 
       <div className="stat-grid">
         <Card className="stat-tile">
           <span className="stat-big">🔥 {streak}</span>
-          <span className="muted small">Day streak</span>
+          <span className="muted small">Day streak · 🧊 {s.freezes ?? 0}/{MAX_FREEZES}</span>
         </Card>
         <Card className="stat-tile">
           <span className="stat-big">⚡ {s.xp}</span>

@@ -1,5 +1,5 @@
 import { splitParagraphs } from '../lib/paragraphs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { Course, Exercise, Lesson, Phrase } from '../types'
 import { useActiveCourse, useLearn } from '../store'
@@ -15,6 +15,7 @@ import {
   typedMatches,
   jumpTestExercises,
   lessonXp,
+  levelInfo,
   liveStreak,
   MAX_HEARTS,
   nextHeartIn,
@@ -28,7 +29,8 @@ import { GATE_KEY } from '../lib/gate'
 import { play, playCombo } from '../lib/sound'
 import { titleCase } from '../lib/titleCase'
 import { clearPause, loadPause, savePause } from '../lib/pause'
-import { Confetti, ProgressBar } from '../components'
+import { Confetti, CountUp, ProgressBar } from '../components'
+import { markJustDone } from '../lib/justDone'
 import { pickEmoji } from '../lib/emoji'
 import { useKeyboardFit } from '../lib/keyboard'
 import { Cloze, clozeTiles, Match, Mcq, Order, SpeakButton, TrueFalse, Typed } from './Exercises'
@@ -128,7 +130,7 @@ interface Session {
   unitIndex?: number
 }
 
-export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
+export default function LessonPage({ mode = 'lesson', review = false }: { mode?: LessonMode; review?: boolean }) {
   const { lessonId = '', unitId = '' } = useParams()
   const navigate = useNavigate()
   const store = useLearn()
@@ -170,6 +172,16 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         exercises: mode === 'quiz' ? unitQuizExercises(course, unitIndex) : jumpTestExercises(course, unitIndex),
       }
     }
+    if (review) {
+      // Daily review: five questions from across every course, weak spots first
+      const live = store.courses.filter((c) => !(store.archived ?? []).includes(c.id))
+      const pool = live.flatMap((c) =>
+        flatLessons(c)
+          .filter((l) => store.progress[l.id]?.completions)
+          .flatMap((l) => exercisesFor(c, c.units.find((u) => u.lessons.some((x) => x.id === l.id)) ?? c.units[0], l.exercises)),
+      )
+      return { course: activeCourse, title: 'Daily Review', emoji: '🎯', cards: [], exercises: pickPractice(pool.map((ex) => ({ ex })), new Set(store.weak ?? []), 5, shuffle).map((p) => p.ex) }
+    }
     if (!activeCourse) return null
     const lessons = flatLessons(activeCourse)
     const done = lessons.filter((l) => store.progress[l.id]?.completions)
@@ -206,6 +218,18 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const [earned, setEarned] = useState({ xp: 0, accuracy: 0, secs: 0, correct: 0 })
   const [quitAsk, setQuitAsk] = useState(false)
   const [combo, setCombo] = useState(0)
+  const [leaving, setLeaving] = useState(false)
+  const [leveled, setLeveled] = useState<number | null>(null)
+  const [heartHit, setHeartHit] = useState(false)
+  const lastHearts = useRef(store.hearts)
+  useEffect(() => {
+    const was = lastHearts.current
+    lastHearts.current = store.hearts
+    if (store.hearts >= was) return
+    setHeartHit(true)
+    const t = setTimeout(() => setHeartHit(false), 800)
+    return () => clearTimeout(t)
+  }, [store.hearts])
   const [unlocked, setUnlocked] = useState<string[]>([])
 
   const item = queue[idx]
@@ -223,10 +247,11 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         return setPhase('failed')
       }
       const before = allAchievementStates(achievementStats(useLearn.getState()))
+      const levelBefore = levelInfo(useLearn.getState().xp).level
       let xp = 0
       if (mode === 'practice') {
         xp = 5
-        store.finishPractice(xp)
+        store.finishPractice(xp, review)
       } else if (mode === 'quiz' && session?.key) {
         xp = store.progress[session.key]?.completions ? 5 : 15
         store.completeLesson(session.key, accuracy, xp)
@@ -238,6 +263,9 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         clearPause()
       }
       const after = allAchievementStates(achievementStats(useLearn.getState()))
+      const levelAfter = levelInfo(useLearn.getState().xp).level
+      if (levelAfter > levelBefore) setLeveled(levelAfter)
+      if (session?.key && mode !== 'practice') markJustDone(session.key)
       setUnlocked(after.flatMap((st, i) => (st.level > before[i].level ? [`${st.a.icon} ${st.a.name} level ${st.level}`] : [])))
       setEarned({ ...result, xp })
       play(store.sound, 'complete')
@@ -254,6 +282,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
       const first = correct && !missed.has(item.key) && hints === 0
       if (first) {
         setCombo(combo + 1)
+        store.noteCombo(combo + 1)
         if (combo + 1 >= 3) playCombo(store.sound, combo + 1)
         else play(store.sound, 'correct')
       } else {
@@ -292,7 +321,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
     grade(correct)
   }, [choice, grade, hints, item, result, typed])
 
-  const next = useCallback(() => {
+  const advance = useCallback(() => {
     setResult(null)
     setChoice(null)
     setTyped('')
@@ -312,6 +341,17 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
     if (idx + 1 >= queue.length) return finish(firstTry)
     setIdx(idx + 1)
   }, [finish, firstTry, idx, lessonId, missed, queue, solved, startedAt, usesHearts])
+
+  // The finished question slides away before the next one arrives
+  const next = useCallback(() => {
+    if (leaving) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return advance()
+    setLeaving(true)
+    setTimeout(() => {
+      setLeaving(false)
+      advance()
+    }, 150)
+  }, [advance, leaving])
 
   const goTeach = useCallback(
     (step: number) => {
@@ -358,7 +398,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   const canHint = hintsOn && !!item && !result && hints < maxHints(item.ex, item.tiles)
   const progressValue = phase === 'done' || phase === 'course' ? 1 : solved / total
   const quit = () => (phase === 'quiz' && solved > 0 ? setQuitAsk(true) : navigate('/path'))
-  const paused = mode === 'practice' ? loadPause() : null
+  const paused = mode === 'practice' && !review ? loadPause() : null
 
   const afterDone = () => {
     const state = useLearn.getState()
@@ -447,7 +487,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
   if (phase === 'done') {
     const cp = course ? courseProgress(course, useLearn.getState().progress) : null
     const streak = liveStreak(store.streak, store.lastActiveDay, dayKey())
-    const heading = { lesson: 'Lesson Complete!', practice: 'Practice Complete!', quiz: 'Quiz Passed!', jump: 'You Jumped Ahead!' }[mode]
+    const heading = { lesson: 'Lesson Complete!', practice: review ? 'Review Complete!' : 'Practice Complete!', quiz: 'Quiz Passed!', jump: 'You Jumped Ahead!' }[mode]
     return (
       <div className="lesson done-screen">
         <Confetti />
@@ -470,7 +510,9 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
           <div className="done-stats">
             <div className="done-stat gold">
               <span>Total XP</span>
-              <strong>⚡ {earned.xp}</strong>
+              <strong>
+                ⚡ <CountUp value={earned.xp} />
+              </strong>
             </div>
             <div className="done-stat green">
               <span>{earned.accuracy >= 1 ? 'Perfect!' : 'Accuracy'}</span>
@@ -495,7 +537,20 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
               ))}
             </div>
           )}
-          <p className="streak-line">🔥 {streak} day streak</p>
+          {leveled && (
+            <div className="levelup" role="status">
+              <span className="levelup-badge" aria-hidden>
+                {leveled}
+              </span>
+              <strong>Level {leveled} reached!</strong>
+            </div>
+          )}
+          <p className="streak-line">
+            <span className="flame" aria-hidden>
+              🔥
+            </span>{' '}
+            <CountUp value={streak} from={Math.max(0, streak - 1)} /> day streak
+          </p>
           {cp && course && (
             <div className="done-course">
               <div className="row-between small">
@@ -554,7 +609,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
             ✕
           </button>
           <ProgressBar value={progressValue} label="Progress" />
-          <span className={`stat hearts ${usesHearts ? '' : 'muted'}`}>{usesHearts ? `❤️ ${store.hearts}` : tested ? `${session.emoji}` : '♾️'}</span>
+          <span className={`stat hearts ${usesHearts ? '' : 'muted'} ${heartHit ? 'hit' : ''}`}>{usesHearts ? `${heartHit ? '💔' : '❤️'} ${store.hearts}` : tested ? `${session.emoji}` : '♾️'}</span>
         </header>
 
         <main className="lesson-body">
@@ -605,7 +660,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
             </div>
           )}
           {phase === 'quiz' && item && (
-            <div key={`${idx}-${item.key}`} className="pop">
+            <div key={`${idx}-${item.key}`} className={`pop ${leaving ? 'leave' : ''}`}>
               {missed.has(item.key) && !result && !tested && (
                 <div className="q-num">
                   <span className="retry-tag">↻ Previous mistake</span>
@@ -678,7 +733,7 @@ export default function LessonPage({ mode = 'lesson' }: { mode?: LessonMode }) {
         </main>
 
         <footer className={`check-bar ${result ? (result.correct ? 'right' : 'wrong') : ''}`}>
-          <div className="check-inner">
+          <div className={`check-inner ${result ? 'fb-in' : ''}`}>
             {phase === 'teach' ? (
               <>
                 <div className="teach-nav">

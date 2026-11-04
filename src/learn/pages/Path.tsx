@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { flatLessons, nextStep, quizKey, stepDone, stepUnlocked } from '../lib/gamify'
@@ -7,6 +7,7 @@ import { courseColours } from '../lib/emojiColour'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
 import { titleCase } from '../lib/titleCase'
+import { clearJustDone, peekJustDone } from '../lib/justDone'
 
 // Horizontal offsets that make the lesson nodes snake down the page
 const SNAKE = [0, 44, 70, 44, 0, -44, -70, -44]
@@ -15,6 +16,12 @@ export default function Path() {
   const course = useActiveCourse()
   const { progress } = useLearn()
   const navigate = useNavigate()
+  // The step finished a moment ago gets a little celebration, and the one it opened pops in
+  const [justDone] = useState(() => peekJustDone())
+  useEffect(() => {
+    const t = setTimeout(clearJustDone, 1500)
+    return () => clearTimeout(t)
+  }, [])
   // Each unit gets the colour that suits its emoji best; emoji that still clash get a neutral plate
   const colours = useMemo(() => (course ? courseColours(course) : []), [course])
 
@@ -103,7 +110,7 @@ export default function Path() {
                   <div key={lesson.id} className="node-wrap" style={{ transform: `translateX(${SNAKE[i % SNAKE.length]}px)` }}>
                     {current && <div className="start-bubble">START</div>}
                     <button
-                      className={`node ${state} ${colour}`}
+                      className={`node ${state} ${colour} ${justDone === lesson.id ? 'just-done' : ''} ${current && justDone ? 'just-unlocked' : ''}`}
                       disabled={!unlocked}
                       onClick={() => navigate(`/lesson/${lesson.id}`)}
                       aria-label={`${lesson.title}${state === 'locked' ? ' (locked)' : ''}`}
@@ -123,7 +130,7 @@ export default function Path() {
               <div className="node-wrap quiz-wrap">
                 {next?.id === quizId && <div className="start-bubble">QUIZ</div>}
                 <button
-                  className={`node quiz ${quizDone ? 'done' : next?.id === quizId ? 'current' : quizOpen ? 'open' : 'locked'} ${colour}`}
+                  className={`node quiz ${quizDone ? 'done' : next?.id === quizId ? 'current' : quizOpen ? 'open' : 'locked'} ${colour} ${justDone === quizId ? 'just-done' : ''} ${next?.id === quizId && justDone ? 'just-unlocked' : ''}`}
                   disabled={!quizOpen}
                   onClick={() => navigate(`/quiz/${unit.id}`)}
                   aria-label={`${unit.title} quiz${quizOpen ? '' : ' (locked)'}`}

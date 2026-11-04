@@ -4,6 +4,8 @@ import type { Course, LessonProgress, Unit } from './types'
 import { DEMO_COURSE } from './demo'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
 import { WEAK_CAP } from './lib/engage'
+import { applyFreeze, MAX_FREEZES } from './lib/freeze'
+import { QUEST_BONUS_XP, questKey, questsFor } from './lib/quests'
 import { bumpStreak, dayKey, lessonsOn, MAX_HEARTS, regenHearts } from './lib/gamify'
 
 interface LearnState {
@@ -26,6 +28,13 @@ interface LearnState {
   archived: string[]
   /** Questions answered wrong, brought back first in practice until they are right */
   weak: string[]
+  /** Streak freezes in the bank, each covers one missed day */
+  freezes: number
+  /** Today's best combo and perfect lessons, for the daily quests */
+  daily: { day: string; combo: number; perfect: number }
+  reviewDay: string | null
+  /** Quest bonuses already taken, as day:quest */
+  claimed: string[]
 
   addCourse: (c: Course) => void
   /** Adds new units to the end of a course and raises its level, keeping all progress */
@@ -35,7 +44,10 @@ interface LearnState {
   deleteCourse: (id: string) => void
   setActiveCourse: (id: string) => void
   completeLesson: (lessonId: string, accuracy: number, xp: number) => void
-  finishPractice: (xp: number) => void
+  finishPractice: (xp: number, review?: boolean) => void
+  noteCombo: (n: number) => void
+  claimQuest: (id: string) => void
+  useFreezeIfNeeded: () => void
   /** Marks steps as done after a jump test, without touching ones already done */
   skipSteps: (ids: string[]) => void
   /** Marks steps as done with no XP or streak, for catching a course up to where the learner was */
@@ -72,6 +84,10 @@ export const useLearn = create<LearnState>()(
       sound: true,
       archived: [],
       weak: [],
+      freezes: 1,
+      daily: { day: '', combo: 0, perfect: 0 },
+      reviewDay: null,
+      claimed: [],
 
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
       extendCourse: (id, units) =>
@@ -130,6 +146,7 @@ export const useLearn = create<LearnState>()(
               },
             },
             xp: s.xp + xp,
+            daily: { day: today, combo: s.daily?.day === today ? s.daily.combo : 0, perfect: (s.daily?.day === today ? s.daily.perfect : 0) + (accuracy >= 1 ? 1 : 0) },
             xpByDay: { ...s.xpByDay, [today]: (s.xpByDay[today] ?? 0) + xp },
             lessonsByDay: { ...s.lessonsByDay, [today]: lessonsOn(today, s.lessonsByDay, s.progress) + 1 },
             streak: bumpStreak(s.streak, s.lastActiveDay, today),
@@ -137,10 +154,11 @@ export const useLearn = create<LearnState>()(
             lastActiveDay: today,
           }
         }),
-      finishPractice: (xp) =>
+      finishPractice: (xp, review) =>
         set((s) => {
           const today = dayKey()
           return {
+            reviewDay: review ? today : s.reviewDay,
             xp: s.xp + xp,
             xpByDay: { ...s.xpByDay, [today]: (s.xpByDay[today] ?? 0) + xp },
             streak: bumpStreak(s.streak, s.lastActiveDay, today),
@@ -186,12 +204,43 @@ export const useLearn = create<LearnState>()(
           return { hearts: Math.max(0, cur.hearts - 1), heartsUpdatedAt: cur.hearts >= MAX_HEARTS ? now : cur.updatedAt }
         }),
       refillHearts: () => set({ hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
+      noteCombo: (n) =>
+        set((s) => {
+          const today = dayKey()
+          const cur = s.daily?.day === today ? s.daily : { day: today, combo: 0, perfect: 0 }
+          return n > cur.combo ? { daily: { ...cur, combo: n } } : s.daily?.day === today ? s : { daily: cur }
+        }),
+      claimQuest: (id) =>
+        set((s) => {
+          const today = dayKey()
+          const key = questKey(today, id)
+          if ((s.claimed ?? []).includes(key)) return s
+          const claimed = [...(s.claimed ?? []), key]
+          let freezes = s.freezes ?? 0
+          // Taking all three bonuses earns a streak freeze
+          const all = questsFor(today).every((q) => claimed.includes(questKey(today, q.id)))
+          if (all && !claimed.includes(questKey(today, 'all'))) {
+            claimed.push(questKey(today, 'all'))
+            freezes = Math.min(MAX_FREEZES, freezes + 1)
+          }
+          return {
+            claimed: claimed.slice(-60),
+            freezes,
+            xp: s.xp + QUEST_BONUS_XP,
+            xpByDay: { ...s.xpByDay, [today]: (s.xpByDay[today] ?? 0) + QUEST_BONUS_XP },
+          }
+        }),
+      useFreezeIfNeeded: () =>
+        set((s) => {
+          const r = applyFreeze(s.lastActiveDay, s.freezes ?? 0, dayKey())
+          return r.used ? { lastActiveDay: r.last, freezes: r.freezes } : s
+        }),
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
       setDailyLessons: (dailyLessons) => set({ dailyLessons }),
       setSound: (sound) => set({ sound }),
       addWeak: (sig) => set((s) => ((s.weak ?? []).includes(sig) ? s : { weak: [...(s.weak ?? []), sig].slice(-WEAK_CAP) })),
       clearWeak: (sig) => set((s) => ((s.weak ?? []).includes(sig) ? { weak: (s.weak ?? []).filter((x) => x !== sig) } : s)),
-      resetProgress: () => set({ weak: [], progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, bestStreak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
+      resetProgress: () => set({ weak: [], freezes: 1, daily: { day: '', combo: 0, perfect: 0 }, reviewDay: null, claimed: [], progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, bestStreak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
     }),
     {
       name: 'leap-v1',

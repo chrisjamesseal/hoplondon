@@ -4,12 +4,16 @@ import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
-import { Card, ProgressBar } from '../components'
+import { Card, CountUp, ProgressBar } from '../components'
+import { questProgress, questsFor, questKey, QUEST_BONUS_XP } from '../lib/quests'
+import { levelInfo } from '../lib/gamify'
+import { makeStreakCard, shareCard } from '../lib/shareCard'
 import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { hearts, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak } = useLearn()
+  const { courses, xp, hearts, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak, freezes, reviewDay, daily, claimed, claimQuest } = useLearn()
+  const [shareMsg, setShareMsg] = useState('')
   const navigate = useNavigate()
   const markStepsDone = useLearn((s) => s.markStepsDone)
   const [catchUp, setCatchUp] = useState<number | null>(null)
@@ -35,6 +39,21 @@ export default function Home() {
     step?.kind === 'lesson' ? flatLessons(course).find((l) => l.id === step.id)?.title : step ? `${course.units[step.unitIndex].title} quiz` : undefined
   const isArchived = (archived ?? []).includes(course.id)
   const today = lessonsOn(dayKey(), lessonsByDay, progress)
+  const day = dayKey()
+  const quests = questsFor(day)
+  const qIn = { day, lessons: today, xp: xpByDay[day] ?? 0, reviewDay, daily }
+  const reviewReady = courses.some((c) => flatLessons(c).some((l) => progress[l.id]?.completions))
+  const allClaimed = (claimed ?? []).includes(questKey(day, 'all'))
+  const lvl = levelInfo(xp)
+  async function share() {
+    try {
+      const blob = await makeStreakCard({ streak, level: lvl.level, xp, lessons: Object.values(progress).filter((p) => p.completions).length })
+      const how = await shareCard(blob, `I'm on a ${streak} day streak on Leap 🔥`)
+      setShareMsg(how === 'saved' ? 'Saved your streak card.' : '')
+    } catch {
+      setShareMsg("Couldn't make the card. Try again.")
+    }
+  }
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -44,6 +63,73 @@ export default function Home() {
 
   return (
     <div className="home-page">
+      <Card className="today-card">
+        <div className="today-head">
+          <h1>Today</h1>
+          <span className="today-streak">
+            <span className={`flame ${streak > 0 ? 'lit' : ''}`} aria-hidden>
+              🔥
+            </span>
+            <strong>
+              <CountUp value={streak} />
+            </strong>
+            <span className="freeze-chip" title="Each freeze covers one missed day">
+              🧊 {freezes ?? 0}
+            </span>
+          </span>
+        </div>
+        <div className="row-between small">
+          <span>🎯 Daily Goal</span>
+          <strong>
+            {Math.min(today, dailyLessons)}/{dailyLessons} {dailyLessons === 1 ? 'lesson' : 'lessons'}
+          </strong>
+        </div>
+        <ProgressBar value={today / dailyLessons} color="gold" height={12} label="Daily goal" />
+        {step && (
+          <button className="btn green wide today-go" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
+            <span>{step.kind === 'quiz' ? '🏆' : '🚀'}</span>
+            <span className="btn-text">{nextTitle && titleCase(nextTitle)}</span>
+          </button>
+        )}
+        {reviewReady && (
+          <Link to="/review" className={`btn ${reviewDay === day ? 'ghost' : 'blue'} wide`}>
+            {reviewDay === day ? '✅ Daily review done' : `🎯 Daily review${weak?.length ? ` · ${weak.length} weak ${weak.length === 1 ? 'spot' : 'spots'}` : ' · 5 questions'}`}
+          </Link>
+        )}
+        <ul className="quests" aria-label="Daily quests">
+          {quests.map((q) => {
+            const have = questProgress(q, qIn)
+            const done = have >= q.target
+            const taken = (claimed ?? []).includes(questKey(day, q.id))
+            return (
+              <li key={q.id} className={`quest ${done ? 'done' : ''}`}>
+                <span className="quest-icon" aria-hidden>
+                  {q.icon}
+                </span>
+                <div className="quest-main">
+                  <span>{q.label}</span>
+                  <ProgressBar value={have / q.target} color={done ? 'green' : 'gold'} height={8} label={q.label} />
+                </div>
+                {done && !taken ? (
+                  <button className="btn gold quest-claim" onClick={() => claimQuest(q.id)}>
+                    +{QUEST_BONUS_XP} XP
+                  </button>
+                ) : (
+                  <span className="quest-count">{taken ? '✓' : `${have}/${q.target}`}</span>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+        {allClaimed && <p className="tiny good">All quests done. Streak freeze earned 🧊</p>}
+        {streak > 0 && (
+          <button className="btn ghost wide" onClick={share}>
+            📤 Share my streak
+          </button>
+        )}
+        {shareMsg && <p className="tiny muted">{shareMsg}</p>}
+      </Card>
+
       <Card className="course-card">
         <div className="course-card-top">
           <div className="card-hearts">
@@ -63,18 +149,16 @@ export default function Home() {
           </strong>
         </div>
         <ProgressBar value={cp.ratio} label="Course progress" />
-        {step ? (
-          <button className="btn green wide" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
-            <span>{step.kind === 'quiz' ? '🏆' : '🚀'}</span>
-            <span className="btn-text">{nextTitle && titleCase(nextTitle)}</span>
-          </button>
-        ) : (
+        {step ? null : (
           <div className="complete-box">
             <strong>🏆 Course Complete!</strong>
             <span className="muted small">You finished every lesson and quiz.</span>
             <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
               🚀 Add more lessons
             </button>
+            <Link to="/create/topic" className="btn ghost wide">
+              💡 Find a new topic
+            </Link>
             <div className="complete-actions">
               <button className="btn blue" onClick={() => navigate('/practice')}>
                 💪 Practise
@@ -85,17 +169,6 @@ export default function Home() {
         <Link to="/courses" className="btn ghost wide change-course">
           🔄 Change Course
         </Link>
-      </Card>
-
-      <Card className="goal-card">
-        <div className="row-between small">
-          <span>🎯 Daily Goal</span>
-          <strong>
-            {Math.min(today, dailyLessons)}/{dailyLessons} {dailyLessons === 1 ? 'lesson' : 'lessons'}
-          </strong>
-        </div>
-        <ProgressBar value={today / dailyLessons} color="gold" height={12} label="Daily goal" />
-        {today >= dailyLessons && <p className="tiny good">Goal smashed today 🎉</p>}
       </Card>
 
       <Card className="streak-week">

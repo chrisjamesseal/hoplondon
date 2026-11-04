@@ -12,6 +12,8 @@ export interface Saved {
   lastActiveDay: string | null
   archived: string[]
   weak: string[]
+  freezes: number
+  claimed: string[]
 }
 
 const maxByKey = (a: Record<string, number> = {}, b: Record<string, number> = {}) => {
@@ -57,5 +59,7 @@ export function mergeBackup(now: Partial<Saved>, backup: Partial<Saved>): Partia
     lastActiveDay: last,
     archived: [...new Set([...(now.archived ?? []), ...(backup.archived ?? [])])],
     weak: [...new Set([...(now.weak ?? []), ...(backup.weak ?? [])])],
+    freezes: Math.max(now.freezes ?? 0, backup.freezes ?? 0),
+    claimed: [...new Set([...(now.claimed ?? []), ...(backup.claimed ?? [])])].slice(-60),
   }
 }

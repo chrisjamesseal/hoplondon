@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { IDEAS } from '../lib/ideas'
 import { useLearn } from '../store'
 import { Card } from '../components'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from '../lib/phrasebook'
@@ -45,7 +46,8 @@ export default function Create() {
   const chosen = TABS.find((t) => t.id === method)
   const tab: Tab = chosen?.id ?? 'topic'
   const [file, setFile] = useState<File | null>(null)
-  const [topic, setTopic] = useState('')
+  const [search] = useSearchParams()
+  const [topic, setTopic] = useState(search.get('topic') ?? '')
   const [link, setLink] = useState('')
   const [transcript, setTranscript] = useState('')
   const [langId, setLangId] = useState('')
@@ -214,6 +216,13 @@ export default function Create() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
             />
+            <div className="ideas" aria-label="Topic ideas">
+              {IDEAS.map((i) => (
+                <button key={i.topic} type="button" className={`idea ${topic === i.topic ? 'on' : ''}`} onClick={() => setTopic(i.topic)}>
+                  <span aria-hidden>{i.emoji}</span> {i.topic}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

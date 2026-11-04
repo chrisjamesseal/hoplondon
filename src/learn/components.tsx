@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 export function ProgressBar({ value, color = 'green', height = 16, label }: { value: number; color?: 'green' | 'gold' | 'blue' | 'red' | 'amber'; height?: number; label?: string }) {
   const pct = Math.round(Math.max(0, Math.min(1, value)) * 100)
@@ -33,4 +33,22 @@ export function Confetti() {
       ))}
     </div>
   )
+}
+
+/** A number that ticks up to its value, instantly when motion is reduced */
+export function CountUp({ value, from = 0, ms = 700 }: { value: number; from?: number; ms?: number }) {
+  const [shown, setShown] = useState(from)
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || from === value) return setShown(value)
+    let raf = 0
+    const start = performance.now()
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / ms)
+      setShown(Math.round(from + (value - from) * (1 - Math.pow(1 - t, 3))))
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, from, ms])
+  return <b className="count-up">{shown}</b>
 }
