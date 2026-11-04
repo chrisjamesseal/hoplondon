@@ -41,7 +41,6 @@ export function TypedParas({ paras }: { paras: string[] }) {
         const start = offset
         offset += chars.length
         const shown = Math.max(0, Math.min(chars.length, n - start))
-        const typingHere = n < total && n >= start && n < start + chars.length + (pi === parts.length - 1 ? 1 : 0)
         // Group runs of same-style characters so key terms keep their colour
         const runs: { em: boolean; from: number; to: number }[] = []
         chars.forEach((ch, i) => {
@@ -65,7 +64,6 @@ export function TypedParas({ paras }: { paras: string[] }) {
                 <span key={ri}>{kids}</span>
               )
             })}
-            {typingHere && shown < chars.length + 1 && <span className="caret" />}
           </p>
         )
       })}

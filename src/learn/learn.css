@@ -949,8 +949,6 @@ button:disabled { cursor: default; }
 /* Teach text types itself out, like a chat reply */
 .ch { opacity: 0; }
 .ch.on { opacity: 1; }
-.caret { display: inline-block; width: 2px; height: 1em; margin-left: 1px; vertical-align: -0.12em; background: var(--purple); animation: caret-blink 0.9s steps(1) infinite; }
-@keyframes caret-blink { 50% { opacity: 0; } }
 .phrase-card > * { animation: text-in 0.5s cubic-bezier(.2,.9,.3,1) both; }
 @keyframes text-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .phrase-card > :nth-child(2) { animation-delay: 0.25s; }
