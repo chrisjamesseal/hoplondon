@@ -12,9 +12,16 @@ describe('typed text', () => {
     const d = typingDelays(chars)
     expect(d[2]).toBeGreaterThan(d[0] * 5)
   })
-  it('finishes a long card within about five seconds', () => {
+  it('finishes a long card within about seven seconds', () => {
     const chars = toChars('word '.repeat(120))
     const total = typingDelays(chars).reduce((a, b) => a + b, 0)
-    expect(total).toBeLessThanOrEqual(5400)
+    expect(total).toBeLessThanOrEqual(7000)
+  })
+})
+
+import { PARAGRAPH_PAUSE_MS } from './TypedText'
+describe('paragraph pause', () => {
+  it('is long enough to notice', () => {
+    expect(PARAGRAPH_PAUSE_MS).toBeGreaterThanOrEqual(600)
   })
 })

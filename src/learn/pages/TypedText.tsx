@@ -10,8 +10,10 @@ export function toChars(text: string): Ch[] {
   return text.split(/\*\*(.+?)\*\*/g).flatMap((seg, i) => [...seg].map((c) => ({ c, em: i % 2 === 1 })))
 }
 
+export const PARAGRAPH_PAUSE_MS = 900
+
 /** How long to wait after each character: a beat at the end of a sentence, a little at a comma */
-export function typingDelays(chars: Ch[], budgetMs = 5200, maxMs = 26, minMs = 7): number[] {
+export function typingDelays(chars: Ch[], budgetMs = 6760, maxMs = 34, minMs = 9): number[] {
   const weight = (c: string) => (/[.!?]/.test(c) ? 9 : c === ',' || c === ';' || c === ':' ? 4 : 1)
   const total = chars.reduce((n, ch) => n + weight(ch.c), 0) || 1
   const base = Math.max(minMs, Math.min(maxMs, budgetMs / total))
@@ -22,7 +24,16 @@ export function typingDelays(chars: Ch[], budgetMs = 5200, maxMs = 26, minMs = 7
 export function TypedParas({ paras }: { paras: string[] }) {
   const parts = useMemo(() => paras.map(toChars), [paras])
   const all = useMemo(() => parts.flat(), [parts])
-  const delays = useMemo(() => typingDelays(all), [all])
+  const delays = useMemo(() => {
+    const d = typingDelays(all)
+    // A real pause before each new paragraph, so a thought lands before the next one starts
+    let at = 0
+    parts.slice(0, -1).forEach((chars) => {
+      at += chars.length
+      d[at - 1] += PARAGRAPH_PAUSE_MS
+    })
+    return d
+  }, [all, parts])
   const total = all.length
   const calm = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   const [n, setN] = useState(calm ? total : 0)
@@ -41,7 +52,6 @@ export function TypedParas({ paras }: { paras: string[] }) {
         const start = offset
         offset += chars.length
         const shown = Math.max(0, Math.min(chars.length, n - start))
-        const typingHere = n < total && n >= start && n < start + chars.length + (pi === parts.length - 1 ? 1 : 0)
         // Group runs of same-style characters so key terms keep their colour
         const runs: { em: boolean; from: number; to: number }[] = []
         chars.forEach((ch, i) => {
@@ -65,7 +75,6 @@ export function TypedParas({ paras }: { paras: string[] }) {
                 <span key={ri}>{kids}</span>
               )
             })}
-            {typingHere && shown < chars.length + 1 && <span className="caret" />}
           </p>
         )
       })}
