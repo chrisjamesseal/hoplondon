@@ -18,3 +18,10 @@ describe('typed text', () => {
     expect(total).toBeLessThanOrEqual(7000)
   })
 })
+
+import { PARAGRAPH_PAUSE_MS } from './TypedText'
+describe('paragraph pause', () => {
+  it('is long enough to notice', () => {
+    expect(PARAGRAPH_PAUSE_MS).toBeGreaterThanOrEqual(600)
+  })
+})
