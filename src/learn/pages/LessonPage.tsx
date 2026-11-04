@@ -1,4 +1,5 @@
 import { splitParagraphs } from '../lib/paragraphs'
+import { TypedParas } from './TypedText'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { Course, Exercise, Lesson, Phrase } from '../types'
@@ -644,11 +645,7 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
                       <SpeakButton text={card.phrase.text} lang={langCode} big />
                     </>
                   ) : (
-                    splitParagraphs(card.text ?? '').map((para, i) => (
-                      <p key={i} className="teach-para">
-                        <RichText text={para} hints={false} />
-                      </p>
-                    ))
+                    <TypedParas paras={splitParagraphs(card.text ?? '')} />
                   )}
                 </div>
                 <div className="dots">
