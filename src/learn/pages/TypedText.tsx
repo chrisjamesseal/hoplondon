@@ -11,7 +11,7 @@ export function toChars(text: string): Ch[] {
 }
 
 /** How long to wait after each character: a beat at the end of a sentence, a little at a comma */
-export function typingDelays(chars: Ch[], budgetMs = 5200, maxMs = 26, minMs = 7): number[] {
+export function typingDelays(chars: Ch[], budgetMs = 6760, maxMs = 34, minMs = 9): number[] {
   const weight = (c: string) => (/[.!?]/.test(c) ? 9 : c === ',' || c === ';' || c === ':' ? 4 : 1)
   const total = chars.reduce((n, ch) => n + weight(ch.c), 0) || 1
   const base = Math.max(minMs, Math.min(maxMs, budgetMs / total))
