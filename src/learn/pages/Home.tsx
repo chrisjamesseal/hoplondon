@@ -6,14 +6,11 @@ import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
 import { Card, CountUp, ProgressBar } from '../components'
 import { questProgress, questsFor, questKey, QUEST_BONUS_XP } from '../lib/quests'
-import { levelInfo } from '../lib/gamify'
-import { makeStreakCard, shareCard } from '../lib/shareCard'
 import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { courses, xp, hearts, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak, freezes, reviewDay, daily, claimed, claimQuest } = useLearn()
-  const [shareMsg, setShareMsg] = useState('')
+  const { courses, hearts, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak, freezes, reviewDay, daily, claimed, claimQuest } = useLearn()
   const navigate = useNavigate()
   const markStepsDone = useLearn((s) => s.markStepsDone)
   const [catchUp, setCatchUp] = useState<number | null>(null)
@@ -44,16 +41,6 @@ export default function Home() {
   const qIn = { day, lessons: today, xp: xpByDay[day] ?? 0, reviewDay, daily }
   const reviewReady = courses.some((c) => flatLessons(c).some((l) => progress[l.id]?.completions))
   const allClaimed = (claimed ?? []).includes(questKey(day, 'all'))
-  const lvl = levelInfo(xp)
-  async function share() {
-    try {
-      const blob = await makeStreakCard({ streak, level: lvl.level, xp, lessons: Object.values(progress).filter((p) => p.completions).length })
-      const how = await shareCard(blob, `I'm on a ${streak} day streak on Leap 🔥`)
-      setShareMsg(how === 'saved' ? 'Saved your streak card.' : '')
-    } catch {
-      setShareMsg("Couldn't make the card. Try again.")
-    }
-  }
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
     d.setDate(d.getDate() - (6 - i))
@@ -122,12 +109,6 @@ export default function Home() {
           })}
         </ul>
         {allClaimed && <p className="tiny good">All quests done. Streak freeze earned 🧊</p>}
-        {streak > 0 && (
-          <button className="btn ghost wide" onClick={share}>
-            📤 Share my streak
-          </button>
-        )}
-        {shareMsg && <p className="tiny muted">{shareMsg}</p>}
       </Card>
 
       <Card className="course-card">
@@ -262,6 +243,11 @@ export default function Home() {
             </button>
           </div>
         </div>
+      )}
+      {step && (
+        <Link to={`/extend/${course.id}`} className="btn ghost wide delete-course">
+          🚀 Too easy? Add a harder level
+        </Link>
       )}
       <Link to={`/rewrite/${course.id}`} className="btn ghost wide delete-course">
         ✏️ Rewrite course

@@ -33,6 +33,7 @@ const FORMAT_BASE = `{
           "title": "Max 5 words",
           "emoji": "🔭",
           "why": "One or two sentences on why this matters in real life.",
+          "terms": [{ "term": "key term", "definition": "One plain English sentence saying what it means." }],
           "teach": ["Short teaching card with a **key term** highlighted.", "Another short card."],
           "phrases": [{ "text": "Wie viel kostet das?", "say": "vee FEEL KOS-tet dahs", "meaning": "How much is it?", "words": [{ "w": "Wie viel", "m": "how much" }, { "w": "kostet", "m": "costs" }, { "w": "das", "m": "that" }] }],
           "exercises": [
@@ -57,6 +58,7 @@ const RULES = `Audience
 - Prefer real world examples: named companies, products, events, people and real figures, as long as you are certain they are accurate. Never invent a statistic or a case study.
 
 Lesson hook
+- Every **key term** highlighted in a lesson's "teach" cards must also appear in that lesson's "terms" list, with a one sentence plain English definition. Learners tap the highlighted word to read it.
 - Give every lesson a "why": one or two plain sentences on why it matters in real life, for example a decision it helps with or a mistake it avoids. No hype.
 - Use an "order" exercise (3 to 5 short items, listed in the correct order) in a lesson only when the topic has a true sequence, such as steps in a process or stages in a timeline. Skip it otherwise.
 

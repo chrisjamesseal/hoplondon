@@ -14,11 +14,11 @@ describe('phrasebook', () => {
     expect(course.lang).toBe(lang.lang)
     expect(course.units).toHaveLength(5)
     const lessons = course.units.flatMap((u) => u.lessons)
-    expect(lessons).toHaveLength(14)
+    expect(lessons).toHaveLength(20)
     // Every phrase is taught, and comes back in later lessons
     const taught = lessons.flatMap((l) => l.phrases ?? []).map((p) => p.text)
-    expect(new Set(taught).size).toBe(10)
-    expect(taught.length).toBeGreaterThan(20)
+    expect(new Set(taught).size).toBe(15)
+    expect(taught.length).toBeGreaterThan(40)
     for (const l of lessons) {
       expect(l.exercises.map((e) => e.type)).toEqual(expect.arrayContaining(['mcq', 'match']))
       for (const e of l.exercises) {
@@ -45,6 +45,15 @@ describe('phrasebook', () => {
     const picks = similarIndexes(8, 3, (j) => de.entries[j][0]).map((j) => de.entries[j][0])
     expect(picks).not.toContain('Ja')
     expect(picks).not.toContain('Nein')
+  })
+
+  it('puts a greeting up against other greetings, not unrelated phrases', () => {
+    // Hello should be tested against goodbye and good night, so the answer is not obvious
+    const es = LANGUAGES.find((l) => l.id === 'es')!
+    const picks = similarIndexes(0, 2, (j) => es.entries[j][0])
+    expect(picks.sort()).toEqual([1, 14])
+    // Where is the station? sits with the other questions
+    expect(similarIndexes(12, 3, (j) => es.entries[j][0]).every((j) => [7, 8, 9].includes(j))).toBe(true)
   })
 
   it('gives word by word meanings for multi word phrases', () => {

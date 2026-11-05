@@ -1,5 +1,6 @@
 import { splitParagraphs } from '../lib/paragraphs'
 import { TypedParas } from './TypedText'
+import { buildDefiner } from '../lib/terms'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import type { Course, Exercise, Lesson, Phrase } from '../types'
@@ -193,6 +194,7 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
   }, [mode, lessonId, unitId])
 
   const gloss = useMemo(() => buildGlossary(session?.course), [session])
+  const define = useMemo(() => buildDefiner(session?.course), [session])
   const langCode = session?.course?.lang
   const total = session?.exercises.length ?? 0
 
@@ -220,6 +222,8 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
   const [quitAsk, setQuitAsk] = useState(false)
   const [combo, setCombo] = useState(0)
   const [leaving, setLeaving] = useState(false)
+  // Cards whose text has finished typing; the next button waits for it, and a card read once appears whole when revisited
+  const [read, setRead] = useState<Set<number>>(() => new Set())
   const [leveled, setLeveled] = useState<number | null>(null)
   const [heartHit, setHeartHit] = useState(false)
   const lastHearts = useRef(store.hearts)
@@ -367,7 +371,7 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (phase === 'teach') {
-        if (e.key === 'Enter' || e.key === 'ArrowRight') goTeach(1)
+        if ((e.key === 'Enter' || e.key === 'ArrowRight') && (read.has(teachIdx) || !session?.cards[teachIdx]?.text)) goTeach(1)
         if (e.key === 'ArrowLeft') goTeach(-1)
       }
       if (phase !== 'quiz' || !item) return
@@ -380,7 +384,7 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [check, goTeach, item, next, phase, result])
+  }, [check, goTeach, item, next, phase, result, read, teachIdx, session])
 
   if (!session || total === 0) return <Navigate to={tested ? '/path' : '/'} replace />
 
@@ -645,7 +649,7 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
                       <SpeakButton text={card.phrase.text} lang={langCode} big />
                     </>
                   ) : (
-                    <TypedParas paras={splitParagraphs(card.text ?? '')} />
+                    <TypedParas key={teachIdx} paras={splitParagraphs(card.text ?? '')} define={define} instant={read.has(teachIdx)} onDone={() => setRead((s) => (s.has(teachIdx) ? s : new Set(s).add(teachIdx)))} />
                   )}
                 </div>
                 <div className="dots">
@@ -741,7 +745,7 @@ export default function LessonPage({ mode = 'lesson', review = false }: { mode?:
                     Skip
                   </button>
                 </div>
-                <button className="btn green" onClick={() => goTeach(1)}>
+                <button className="btn green" disabled={!!card?.text && !read.has(teachIdx)} onClick={() => goTeach(1)}>
                   {teachIdx + 1 < session.cards.length ? 'Next' : "Let's go"}
                 </button>
               </>

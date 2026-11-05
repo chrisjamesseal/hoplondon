@@ -244,7 +244,7 @@ export const useLearn = create<LearnState>()(
     }),
     {
       name: 'leap-v1',
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => {
         // v1 stored a Claude API key; drop it
         const { apiKey: _drop, ...rest } = (persisted ?? {}) as Record<string, unknown>
@@ -252,16 +252,18 @@ export const useLearn = create<LearnState>()(
         if (Array.isArray(rest.courses)) {
           rest.courses = (rest.courses as Course[]).map((c) => (c.id === DEMO_COURSE.id ? DEMO_COURSE : c))
         }
-        // v4 grew the travel phrase courses to 5 units; carry progress over by lesson title
-        if (version < 4 && Array.isArray(rest.courses)) {
+        // v4 grew the travel phrase courses to 5 units, v6 to 15 phrases; carry progress over by lesson title
+        if (version < 6 && Array.isArray(rest.courses)) {
           const progress = { ...((rest.progress ?? {}) as Record<string, LessonProgress>) }
           rest.courses = (rest.courses as Course[]).map((c) => {
             const lang = c.source.kind === 'language' ? LANGUAGES.find((l) => languageLabel(l) === c.source.label) : undefined
             if (!lang) return c
             const fresh = { ...buildLanguageCourse(lang), id: c.id, createdAt: c.createdAt }
             const newByTitle = new Map(fresh.units.flatMap((u) => u.lessons).reverse().map((l) => [l.title, l.id]))
+            // The old last round of phrases is now the middle one
+            const renamed: Record<string, string> = { 'Last five': 'Next five' }
             for (const old of c.units.flatMap((u) => u.lessons)) {
-              const to = newByTitle.get(old.title)
+              const to = newByTitle.get(renamed[old.title] && !c.units.some((u) => u.lessons.some((l) => l.title === 'Next five')) ? renamed[old.title] : old.title)
               if (to && progress[old.id]) progress[to] = progress[old.id]
             }
             return fresh

@@ -75,7 +75,7 @@ export default function ExtendCourse() {
         <h1>Level {level}</h1>
       </div>
       <p className="muted">
-        A harder follow on to {course.emoji} {titleCase(course.title)}. The new units are added to the end of the same course, so your progress carries on.
+        A harder follow on to {course.emoji} {titleCase(course.title)}. The new units are added to the end of the same course, so your progress carries on. If the lessons so far feel too easy, use Jump here on the path to go straight to the harder ones.
       </p>
 
       <Card>

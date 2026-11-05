@@ -78,6 +78,17 @@ export function normalizeExercise(raw: unknown): Exercise | null {
   }
 }
 
+const termsOf = (v: unknown): { t: string; d: string }[] | undefined => {
+  const out = (Array.isArray(v) ? v : [])
+    .map((x) => {
+      const r = (x ?? {}) as Record<string, unknown>
+      return { t: str(r.term) || str(r.t), d: str(r.definition) || str(r.meaning) || str(r.d) }
+    })
+    .filter((x) => x.t && x.d)
+    .slice(0, 8)
+  return out.length ? out : undefined
+}
+
 const phrasesOf = (v: unknown): Phrase[] =>
   (Array.isArray(v) ? v : [])
     .map((p) => {
@@ -103,6 +114,7 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
             title: str(lr.title) || 'Lesson',
             emoji: emojiOf(lr.emoji),
             why: str(lr.why).slice(0, 220) || undefined,
+            terms: termsOf(lr.terms),
             teach: strs(lr.teach).slice(0, 4),
             phrases: phrasesOf(lr.phrases),
             exercises: (Array.isArray(lr.exercises) ? lr.exercises : []).map(normalizeExercise).filter((e): e is Exercise => !!e),

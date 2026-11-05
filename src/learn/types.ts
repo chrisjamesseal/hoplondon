@@ -75,6 +75,8 @@ export interface Lesson {
   emoji?: string
   /** One or two lines on why this matters in real life, shown as the first card */
   why?: string
+  /** Plain English meanings for the **key terms** in the teaching cards, shown when a learner taps one */
+  terms?: { t: string; d: string }[]
   /** Short teaching cards shown before the exercises */
   teach: string[]
   /** Phrase cards shown after the teach cards (language courses) */
