@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 interface Ch {
   c: string
@@ -20,8 +20,62 @@ export function typingDelays(chars: Ch[], budgetMs = 6760, maxMs = 34, minMs = 9
   return chars.map((ch) => base * weight(ch.c))
 }
 
-/** Teaching text that types itself out one letter at a time. Tap it to show the rest straight away. */
-export function TypedParas({ paras }: { paras: string[] }) {
+/** A highlighted key term. Once it has been typed it is underlined, and tapping it shows what it means. */
+function TermHint({ meaning, children }: { meaning: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false)
+  const [shift, setShift] = useState(0)
+  const wrap = useRef<HTMLSpanElement>(null)
+  const bubble = useRef<HTMLSpanElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e: Event) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('pointerdown', close)
+    return () => document.removeEventListener('pointerdown', close)
+  }, [open])
+
+  // Keep the bubble on screen when the word sits near an edge
+  useLayoutEffect(() => {
+    if (!open || !bubble.current) return setShift(0)
+    const r = bubble.current.getBoundingClientRect()
+    const pad = 12
+    const dx = r.left - shift < pad ? pad - (r.left - shift) : r.right - shift > window.innerWidth - pad ? window.innerWidth - pad - (r.right - shift) : 0
+    if (dx !== shift) setShift(dx)
+  }, [open, shift])
+
+  return (
+    <span ref={wrap} className="hint-wrap">
+      <button type="button" className={`hint-word term ${open ? 'open' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        {children}
+      </button>
+      {open && (
+        <span ref={bubble} className="hint-bubble term-bubble" role="tooltip" style={{ transform: `translateX(calc(-50% + ${shift}px))`, ['--arrow-shift' as string]: `${-shift}px` }}>
+          {meaning}
+        </span>
+      )}
+    </span>
+  )
+}
+
+/**
+ * Teaching text that types itself out one letter at a time. Key terms become
+ * tappable once typed. `onDone` fires when the last letter is in, and `instant`
+ * shows everything straight away (a card the learner has already read).
+ */
+export function TypedParas({
+  paras,
+  define,
+  instant = false,
+  onDone,
+}: {
+  paras: string[]
+  /** What a key term means, or null when nothing in the course says */
+  define?: (term: string) => string | null
+  instant?: boolean
+  onDone?: () => void
+}) {
   const parts = useMemo(() => paras.map(toChars), [paras])
   const all = useMemo(() => parts.flat(), [parts])
   const delays = useMemo(() => {
@@ -36,7 +90,7 @@ export function TypedParas({ paras }: { paras: string[] }) {
   }, [all, parts])
   const total = all.length
   const calm = typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  const [n, setN] = useState(calm ? total : 0)
+  const [n, setN] = useState(calm || instant ? total : 0)
 
   useEffect(() => {
     if (n >= total) return
@@ -44,9 +98,15 @@ export function TypedParas({ paras }: { paras: string[] }) {
     return () => clearTimeout(t)
   }, [n, total, delays])
 
+  const finished = n >= total
+  useEffect(() => {
+    if (finished) onDone?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [finished])
+
   let offset = 0
   return (
-    <div className="typed" onClick={() => setN(total)}>
+    <div className="typed">
       <span className="sr-only">{paras.map((p) => p.replace(/\*\*/g, '')).join(' ')}</span>
       {parts.map((chars, pi) => {
         const start = offset
@@ -60,19 +120,21 @@ export function TypedParas({ paras }: { paras: string[] }) {
           else runs.push({ em: ch.em, from: i, to: i + 1 })
         })
         return (
-          <p key={pi} className="teach-para" aria-hidden>
+          <p key={pi} className="teach-para">
             {runs.map((r, ri) => {
               const kids = chars.slice(r.from, r.to).map((ch, k) => (
-                <span key={k} className={`ch ${r.from + k < shown ? 'on' : ''}`}>
+                <span key={k} className={`ch ${r.from + k < shown ? 'on' : ''}`} aria-hidden>
                   {ch.c}
                 </span>
               ))
-              return r.em ? (
+              if (!r.em) return <span key={ri}>{kids}</span>
+              const term = chars.slice(r.from, r.to).map((c) => c.c).join('')
+              const typed = shown >= r.to
+              const meaning = define?.(term) ?? paras[pi].replace(/\*\*/g, '')
+              return (
                 <strong key={ri} className="em">
-                  {kids}
+                  {typed ? <TermHint meaning={meaning}>{kids}</TermHint> : kids}
                 </strong>
-              ) : (
-                <span key={ri}>{kids}</span>
               )
             })}
           </p>

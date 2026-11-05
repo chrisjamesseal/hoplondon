@@ -18,6 +18,10 @@ export const DEMO_COURSE: Course = {
         {
           id: 'demo-l1',
           title: 'How the Sun works',
+          terms: [
+            { t: 'nuclear fusion', d: 'Hydrogen nuclei squeezed together into helium, turning a little mass into a lot of energy.' },
+            { t: '99.8% of all the mass', d: 'Nearly everything in the Solar System, by weight, is the Sun.' },
+          ],
           why: 'Almost every energy source you use, from solar panels to the food you eat, started as sunlight. Knowing how the Sun works explains a lot about how Earth works.',
           teach: [
             'The Sun is an ordinary star that holds about **99.8% of all the mass** in the Solar System. Everything else, planets included, is a rounding error.',
@@ -40,6 +44,10 @@ export const DEMO_COURSE: Course = {
         {
           id: 'demo-l2',
           title: 'The rocky planets',
+          terms: [
+            { t: 'runaway greenhouse effect', d: 'Trapped heat that keeps raising the temperature, which traps even more heat.' },
+            { t: 'iron oxide', d: 'The compound in rust, which gives Mars its red colour.' },
+          ],
           teach: [
             'Mercury, Venus, Earth and Mars are small, dense worlds of rock and metal. Their differences come down mostly to their atmospheres.',
             'Venus is the hottest planet at around 465°C, even though Mercury is closer to the Sun. Its thick carbon dioxide atmosphere traps heat: a **runaway greenhouse effect**.',
@@ -70,6 +78,10 @@ export const DEMO_COURSE: Course = {
         {
           id: 'demo-l3',
           title: 'Gas giants',
+          terms: [
+            { t: 'hydrogen and helium', d: 'The two lightest elements, which make up most of Jupiter and Saturn.' },
+            { t: 'Great Red Spot', d: 'A storm on Jupiter wider than Earth, watched for over 150 years.' },
+          ],
           teach: [
             'Jupiter and Saturn are made mostly of **hydrogen and helium**, with no solid surface to stand on. Go deeper and the gas simply gets denser and hotter.',
             'Jupiter has more than twice the mass of all the other planets combined. Its **Great Red Spot** is a storm wider than Earth that has been watched for well over 150 years.',
@@ -86,6 +98,10 @@ export const DEMO_COURSE: Course = {
         {
           id: 'demo-l4',
           title: 'Ice giants',
+          terms: [
+            { t: 'ice giants', d: 'Uranus and Neptune, rich in water, ammonia and methane.' },
+            { t: 'absorbs red light', d: 'Methane soaks up red light, so the blue light is what reaches our eyes.' },
+          ],
           teach: [
             'Uranus and Neptune are **ice giants**. Beneath their atmospheres they are rich in water, ammonia and methane, which astronomers call "ices" even when they are hot and dense.',
             'Methane in their upper atmospheres **absorbs red light**, which is why both look blue.',

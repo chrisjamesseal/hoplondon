@@ -959,3 +959,10 @@ button:disabled { cursor: default; }
 /* Left aligned while typing so each line fills from the left like a chat reply */
 .teach-card .typed { text-align: left; }
 .teach-card .typed .teach-para { text-align: left; text-wrap: pretty; }
+
+/* Key terms in teaching text: underlined, tap for the meaning */
+.hint-word.term { font-weight: inherit; text-decoration: underline solid 2px; text-decoration-color: var(--em); text-underline-offset: 5px; color: inherit; }
+.hint-word.term.open { color: inherit; text-decoration-color: var(--blue); }
+.hint-word.term:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
+.term-bubble { white-space: normal; width: max-content; max-width: min(280px, 76vw); text-align: left; font-weight: 600; font-size: 15px; line-height: 1.4; overflow: visible; text-overflow: clip; animation: combo-pop 0.2s ease-out; }
+.term-bubble::after { left: calc(50% + var(--arrow-shift, 0px)); }
