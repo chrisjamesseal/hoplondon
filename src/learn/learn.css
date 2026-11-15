@@ -1031,4 +1031,8 @@ html, body { touch-action: pan-x pan-y; }
 .pr-audio:focus-visible { outline: 2px solid var(--muted); outline-offset: 2px; }
 .course-card .btn svg { vertical-align: -4px; margin-right: 6px; }
 
+/* Phrasebook icon in the corner of the course card */
+.corner-btn { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--surface-2); color: var(--blue); }
+.corner-btn:active { transform: scale(0.94); }
+.corner-btn:focus-visible { outline: 2px solid var(--muted); outline-offset: 2px; }
 .phrase-row.faded { opacity: 0.6; }
