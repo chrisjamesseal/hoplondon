@@ -994,6 +994,13 @@ html, body { touch-action: pan-x pan-y; }
 .courses .cat-tile { padding: 16px 10px 14px; }
 .courses .archive-link { color: var(--blue); }
 
+/* My Courses: grouped or list */
+.view-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 14px; padding: 4px; background: var(--tile); border-radius: 14px; }
+.view-toggle button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 0; border: 0; border-radius: 11px; background: none; color: var(--muted); font: inherit; font-weight: 800; cursor: pointer; transition: background 0.2s, color 0.2s; }
+.view-toggle button.on { background: var(--surface-2); color: var(--text); }
+.view-toggle button:focus-visible { outline: 2px solid var(--muted); outline-offset: 2px; }
+.course-list { display: flex; flex-direction: column; margin-top: 16px; }
+.course-list .course-row { margin-top: 0; }
 /* Lines between the circles on the path */
 .nodes { position: relative; }
 .path-lines { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 0; }
