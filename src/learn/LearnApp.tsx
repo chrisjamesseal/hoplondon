@@ -100,12 +100,14 @@ export default function LearnApp() {
 
   // Sounds stay audible on a silent iPhone. Starting audio needs a tap, so it is also tried on the first one.
   useEffect(() => {
-    setPlayInSilent(playInSilent)
-    if (!playInSilent) return
+    // The silent clip shows up as a playing audio on the phone, so it only runs where there is sound: lessons and the phrasebook
+    const on = playInSilent && /^\/(lesson|practice|review|quiz|jump|phrasebook)/.test(pathname)
+    setPlayInSilent(on)
+    if (!on) return
     const again = () => setPlayInSilent(true)
     document.addEventListener('pointerdown', again, { once: true })
     return () => document.removeEventListener('pointerdown', again)
-  }, [playInSilent])
+  }, [playInSilent, pathname])
 
   if (inLesson) {
     // Keyed per visit so moving between sessions, or retrying a quiz, starts fresh
