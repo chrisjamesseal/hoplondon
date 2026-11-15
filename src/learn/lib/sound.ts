@@ -2,6 +2,7 @@ let ctx: AudioContext | null = null
 
 function tone(freq: number, start: number, dur: number, type: OscillatorType = 'sine', gain = 0.12) {
   ctx ??= new AudioContext()
+  if (ctx.state === 'suspended') void ctx.resume()
   const t = ctx.currentTime + start
   const osc = ctx.createOscillator()
   const g = ctx.createGain()
@@ -50,29 +51,70 @@ export function play(enabled: boolean, name: keyof typeof sounds) {
 
 const SILENT_WAV = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=='
 let keeper: HTMLAudioElement | null = null
+let wanted = false
+let armed = false
+
+const session = () => (navigator as unknown as { audioSession?: { type: string } }).audioSession
+
+/** Starts the silent clip once the phone allows it (it needs a tap), and again if it ever stops */
+function startKeeper() {
+  if (!wanted) return
+  if (!keeper) {
+    keeper = Object.assign(new Audio(SILENT_WAV), { loop: true, preload: 'auto' })
+    keeper.setAttribute('playsinline', '')
+    keeper.setAttribute('aria-hidden', 'true')
+    keeper.style.display = 'none'
+    document.body.appendChild(keeper)
+    keeper.addEventListener('pause', () => {
+      // Phone calls and other apps pause it: wait for the next tap
+      armed = false
+      arm()
+    })
+  }
+  if (!keeper.paused) return
+  void keeper.play().then(
+    () => ctx?.state === 'suspended' && void ctx.resume(),
+    () => arm(),
+  )
+}
+
+/** Tries again on each tap and when the app comes back to the front, until the clip is playing */
+function arm() {
+  if (armed || !wanted) return
+  armed = true
+  const go = () => {
+    if (keeper && !keeper.paused) return done()
+    startKeeper()
+    // Stay armed until it is really playing
+    setTimeout(() => keeper && !keeper.paused && done(), 300)
+  }
+  const done = () => {
+    armed = false
+    for (const t of ['pointerdown', 'touchend', 'click']) document.removeEventListener(t, go, true)
+    document.removeEventListener('visibilitychange', go)
+  }
+  for (const t of ['pointerdown', 'touchend', 'click']) document.addEventListener(t, go, true)
+  document.addEventListener('visibilitychange', go)
+}
 
 /**
- * The iPhone silent switch mutes web sound unless the page asks for the
- * "playback" audio category. Safari 16.4 and later has an API for that; older
- * versions are tricked by quietly looping a silent clip. Either way the sounds
- * of the app, and spoken phrases, are heard while the phone is on silent.
- * (The catch: it can pause music playing in another app while a sound plays.)
+ * The iPhone silent switch mutes web sound, and spoken phrases too. Two things
+ * lift that: asking Safari for the "playback" audio category (16.4 and later),
+ * and keeping a silent clip playing, which older versions and the home screen
+ * app need. Both are used together so sounds and phrases are heard on silent.
+ * (The catch: it can pause music playing in another app.)
  */
 export function setPlayInSilent(on: boolean) {
+  wanted = on
   try {
-    const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession
-    if (session) {
-      session.type = on ? 'playback' : 'auto'
-      return
-    }
-    if (!on) {
+    const s = session()
+    if (s) s.type = on ? 'playback' : 'auto'
+    if (on) {
+      startKeeper()
+      arm()
+    } else {
       keeper?.pause()
-      return
     }
-    keeper ??= Object.assign(new Audio(SILENT_WAV), { loop: true })
-    void keeper.play().catch(() => {
-      // Needs a tap first: it is tried again on the next one
-    })
   } catch {
     // Not supported here: sounds follow the silent switch as usual
   }
