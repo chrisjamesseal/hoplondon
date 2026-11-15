@@ -36,15 +36,19 @@ function TermHint({ meaning, children }: { meaning: string; children: ReactNode 
     return () => document.removeEventListener('pointerdown', close)
   }, [open])
 
-  // Keep the bubble on screen when the word sits near an edge. Measured once each time it opens:
-  // the bubble has a fixed width, so moving it can never change what was measured.
+  // Keep the bubble on screen when the word sits near an edge. Works from the layout width and the
+  // word's position, not the bubble's drawn box, because that is still scaled down while it pops in.
   useLayoutEffect(() => {
     if (!open) return setShift(0)
     const el = bubble.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
+    const w = wrap.current
+    if (!el || !w) return
+    const centre = w.getBoundingClientRect().left + w.getBoundingClientRect().width / 2
+    const half = el.offsetWidth / 2
     const pad = 12
-    setShift(r.left < pad ? pad - r.left : r.right > window.innerWidth - pad ? window.innerWidth - pad - r.right : 0)
+    const left = centre - half
+    const right = centre + half
+    setShift(left < pad ? pad - left : right > window.innerWidth - pad ? window.innerWidth - pad - right : 0)
   }, [open])
 
   return (
