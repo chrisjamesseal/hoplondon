@@ -969,7 +969,8 @@ button:disabled { cursor: default; }
 .hint-word.term { font-weight: inherit; text-decoration: underline solid 2px; text-decoration-color: var(--em); text-underline-offset: 5px; color: inherit; }
 .hint-word.term.open { color: inherit; text-decoration-color: var(--blue); }
 .hint-word.term:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
-.term-bubble { white-space: normal; width: max-content; max-width: min(280px, 76vw); text-align: left; font-weight: 600; font-size: 15px; line-height: 1.4; overflow: visible; text-overflow: clip; animation: combo-pop 0.2s ease-out; }
+.term-bubble { white-space: normal; width: min(260px, 76vw); text-align: left; font-weight: 600; font-size: 15px; line-height: 1.4; overflow: visible; text-overflow: clip; animation: term-in 0.18s ease-out; }
+@keyframes term-in { from { opacity: 0; } to { opacity: 1; } }
 .term-bubble::after { left: calc(50% + var(--arrow-shift, 0px)); }
 
 /* Path pictures: white line icons */
@@ -992,3 +993,11 @@ html, body { touch-action: pan-x pan-y; }
 }
 .courses .cat-tile { padding: 16px 10px 14px; }
 .courses .archive-link { color: var(--blue); }
+
+/* Lines between the circles on the path */
+.nodes { position: relative; }
+.path-lines { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; z-index: 0; }
+.path-lines path { fill: none; stroke: var(--border); stroke-width: 8; stroke-linecap: round; opacity: 0.8; }
+.path-lines path.done { stroke: var(--gold); opacity: 0.55; }
+.nodes .node-wrap { z-index: 1; }
+.nodes .node-label { position: relative; text-shadow: 0 0 6px var(--bg), 0 0 6px var(--bg); }

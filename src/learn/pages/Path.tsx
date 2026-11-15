@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { flatLessons, nextStep, quizKey, stepDone, stepUnlocked } from '../lib/gamify'
@@ -10,6 +10,54 @@ import { titleCase } from '../lib/titleCase'
 import { clearJustDone, peekJustDone } from '../lib/justDone'
 
 const COLOURS = ['green', 'blue', 'purple', 'orange', 'pink', 'teal'] as const
+
+/** Curved lines joining each circle to the next, drawn from where the circles actually sit on screen */
+function Connectors() {
+  const ref = useRef<SVGSVGElement>(null)
+  const [lines, setLines] = useState<{ d: string; done: boolean }[]>([])
+  const [size, setSize] = useState({ w: 0, h: 0 })
+
+  useLayoutEffect(() => {
+    const host = ref.current?.parentElement
+    if (!host) return
+    const measure = () => {
+      const h = host.getBoundingClientRect()
+      const nodes = [...host.querySelectorAll<HTMLElement>('.node')]
+      const pts = nodes.map((n) => {
+        const r = n.getBoundingClientRect()
+        return { x: r.left - h.left + r.width / 2, y: r.top - h.top + r.height / 2, done: n.classList.contains('done') }
+      })
+      setSize({ w: h.width, h: h.height })
+      setLines(
+        pts.slice(1).map((b, i) => {
+          const a = pts[i]
+          const mid = (a.y + b.y) / 2
+          return { d: `M${a.x} ${a.y} C${a.x} ${mid} ${b.x} ${mid} ${b.x} ${b.y}`, done: a.done && b.done }
+        }),
+      )
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(host)
+    window.addEventListener('resize', measure)
+    // Circles pop and fonts load after the first paint, so measure again once things settle
+    const later = setTimeout(measure, 1400)
+    document.fonts?.ready.then(measure).catch(() => {})
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+      clearTimeout(later)
+    }
+  }, [])
+
+  return (
+    <svg ref={ref} className="path-lines" width={size.w} height={size.h} aria-hidden>
+      {lines.map((l, i) => (
+        <path key={i} d={l.d} className={l.done ? 'done' : ''} />
+      ))}
+    </svg>
+  )
+}
 
 // Horizontal offsets that make the lesson nodes snake down the page
 const SNAKE = [0, 44, 70, 44, 0, -44, -70, -44]
@@ -104,6 +152,7 @@ export default function Path() {
               )}
             </div>
             <div className="nodes">
+              <Connectors />
               {unit.lessons.map((lesson) => {
                 const i = lessonIndex.get(lesson.id) ?? 0
                 const p = progress[lesson.id]
