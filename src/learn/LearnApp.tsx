@@ -1,3 +1,4 @@
+import { House, Library, Map as MapIcon, Sparkles, UserRound } from 'lucide-react'
 import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useLearn } from './store'
@@ -16,11 +17,11 @@ import Achievements from './pages/Achievements'
 import ExtendCourse from './pages/ExtendCourse'
 
 const NAV = [
-  { to: '/', label: 'Home', icon: '🏠' },
-  { to: '/path', label: 'Path', icon: '🗺️' },
-  { to: '/create', label: 'New course', icon: '✨' },
-  { to: '/courses', label: 'Courses', icon: '📚' },
-  { to: '/profile', label: 'Profile', icon: '🐸' },
+  { to: '/', label: 'Home', Icon: House },
+  { to: '/path', label: 'Path', Icon: MapIcon },
+  { to: '/create', label: 'New course', Icon: Sparkles },
+  { to: '/courses', label: 'Courses', Icon: Library },
+  { to: '/profile', label: 'Profile', Icon: UserRound },
 ]
 
 /** Progress for courses being written in the background */
@@ -116,7 +117,7 @@ export default function LearnApp() {
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `side-link${isActive ? ' active' : ''}`}>
             <span className="side-icon" aria-hidden>
-              {n.icon}
+              <n.Icon size={26} strokeWidth={2.1} />
             </span>
             <span className="side-label">{n.label}</span>
           </NavLink>
