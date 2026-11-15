@@ -216,12 +216,22 @@ export default function Create() {
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
             />
-            <div className="ideas" aria-label="Topic ideas">
-              {IDEAS.map((i) => (
-                <button key={i.topic} type="button" className={`idea ${topic === i.topic ? 'on' : ''}`} onClick={() => setTopic(i.topic)}>
-                  <span aria-hidden>{i.emoji}</span> {i.topic}
-                </button>
-              ))}
+            {/* Inspiration only: three slow rows, not interactive */}
+            <div className="ideas" aria-hidden="true">
+              {[0, 1, 2].map((r) => {
+                const row = IDEAS.filter((_, n) => n % 3 === r)
+                return (
+                  <div key={r} className={`idea-row r${r}`}>
+                    <div className="idea-track">
+                      {[...row, ...row].map((i, n) => (
+                        <span key={n} className="idea">
+                          <span>{i.emoji}</span> {i.topic}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           </div>
         )}

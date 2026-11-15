@@ -1,4 +1,4 @@
-/** Topic ideas for the Create page, one tap fills the topic box */
+/** Topic ideas for the Create page, shown as a slow scrolling strip, just for inspiration */
 export const IDEAS = [
   { emoji: '🧠', topic: 'How memory works and how to remember more' },
   { emoji: '💷', topic: 'How investing works for beginners' },
@@ -12,4 +12,10 @@ export const IDEAS = [
   { emoji: '📈', topic: 'How to read a company balance sheet' },
   { emoji: '🎨', topic: 'A short history of modern art' },
   { emoji: '🚀', topic: 'How space travel actually works' },
+  { emoji: '🧬', topic: 'How DNA and genes work' },
+  { emoji: '☕', topic: 'Where coffee comes from' },
+  { emoji: '⚖️', topic: 'How the legal system works' },
+  { emoji: '🎹', topic: 'Music theory basics' },
+  { emoji: '🦠', topic: 'How vaccines work' },
+  { emoji: '🏔️', topic: 'How mountains form' },
 ]
