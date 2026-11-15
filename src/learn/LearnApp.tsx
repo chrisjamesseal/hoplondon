@@ -7,6 +7,7 @@ import { useJobs } from './jobs'
 import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
 import Path from './pages/Path'
+import Phrasebook from './pages/Phrasebook'
 import Create from './pages/Create'
 import LessonPage from './pages/LessonPage'
 import Courses from './pages/Courses'
@@ -142,6 +143,7 @@ export default function LearnApp() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/path" element={<Path />} />
+            <Route path="/phrasebook" element={<Phrasebook />} />
             <Route path="/create" element={<Create />} />
             <Route path="/create/:method" element={<Create />} />
             <Route path="/courses" element={<CourseCategories />} />
