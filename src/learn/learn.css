@@ -979,3 +979,6 @@ button:disabled { cursor: default; }
 
 /* iPhone zooms into any field with text smaller than 16px, so every field is at least that */
 input:not([type='checkbox']):not([type='radio']), textarea, select { font-size: max(16px, 1em); }
+
+/* No pinch or double tap zoom: the app is built for one screen size */
+html, body { touch-action: pan-x pan-y; }
