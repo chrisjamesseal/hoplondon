@@ -966,3 +966,6 @@ button:disabled { cursor: default; }
 .hint-word.term:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
 .term-bubble { white-space: normal; width: max-content; max-width: min(280px, 76vw); text-align: left; font-weight: 600; font-size: 15px; line-height: 1.4; overflow: visible; text-overflow: clip; animation: combo-pop 0.2s ease-out; }
 .term-bubble::after { left: calc(50% + var(--arrow-shift, 0px)); }
+.quests-card { display: flex; flex-direction: column; gap: 12px; }
+.quests-card h2 { margin: 0; font-size: 20px; }
+.quests-card .pbar, .course-card .pbar { flex: none; width: 100%; }

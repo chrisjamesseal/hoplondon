@@ -4,7 +4,7 @@ import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
 import { plainText } from './RichText'
-import { Card, CountUp, ProgressBar } from '../components'
+import { Card, ProgressBar } from '../components'
 import { questProgress, questsFor, questKey, QUEST_BONUS_XP } from '../lib/quests'
 import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
@@ -50,28 +50,25 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <Card className="today-card">
-        <div className="today-head">
-          <h1>Today</h1>
-          <span className="today-streak">
-            <span className={`flame ${streak > 0 ? 'lit' : ''}`} aria-hidden>
-              🔥
-            </span>
-            <strong>
-              <CountUp value={streak} />
-            </strong>
-            <span className="freeze-chip" title="Each freeze covers one missed day">
-              🧊 {freezes ?? 0}
-            </span>
-          </span>
+      <Card className="course-card">
+        <div className="course-card-top">
+          <div className="card-hearts">
+            <span title="Streak" className="streak-chip">🔥 {streak}</span>
+            <span title="Hearts">❤️ {hearts}</span>
+          </div>
+          <span className="course-emoji">{course.emoji}</span>
+          <div>
+            <h1>{titleCase(course.title)}</h1>
+            {course.summary && <p className="muted">{course.summary}</p>}
+          </div>
         </div>
         <div className="row-between small">
-          <span>🎯 Daily Goal</span>
+          <span>📊 Course Progress</span>
           <strong>
-            {Math.min(today, dailyLessons)}/{dailyLessons} {dailyLessons === 1 ? 'lesson' : 'lessons'}
+            {cp.done}/{cp.total} lessons · {Math.round(cp.ratio * 100)}%
           </strong>
         </div>
-        <ProgressBar value={today / dailyLessons} color="gold" height={12} label="Daily goal" />
+        <ProgressBar value={cp.ratio} label="Course progress" />
         {step && (
           <button className="btn green wide today-go" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
             <span>{step.kind === 'quiz' ? '🏆' : '🚀'}</span>
@@ -83,6 +80,65 @@ export default function Home() {
             {reviewDay === day ? '✅ Daily review done' : `🎯 Daily review${weak?.length ? ` · ${weak.length} weak ${weak.length === 1 ? 'spot' : 'spots'}` : ' · 5 questions'}`}
           </Link>
         )}
+        {step ? null : (
+          <div className="complete-box">
+            <strong>🏆 Course Complete!</strong>
+            <span className="muted small">You finished every lesson and quiz.</span>
+            <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
+              🚀 Add more lessons
+            </button>
+            <Link to="/create/topic" className="btn ghost wide">
+              💡 Find a new topic
+            </Link>
+            <div className="complete-actions">
+              <button className="btn blue" onClick={() => navigate('/practice')}>
+                💪 Practise
+              </button>
+            </div>
+          </div>
+        )}
+        <Link to="/courses" className="btn ghost wide change-course">
+          🔄 Change Course
+        </Link>
+      </Card>
+
+      <Card className="streak-week">
+        <div className="row-between small">
+          <span>
+            🔥 {streak} day streak{' '}
+            <span className="freeze-chip" title="Each freeze covers one missed day">
+              🧊 {freezes ?? 0}
+            </span>
+          </span>
+          <span className="muted">Last 7 days</span>
+        </div>
+        <ol className="sw-days" aria-label="Days you learned this week">
+          {days.map((d) => (
+            <li key={d.k} className={`sw-day ${d.on ? 'on' : ''} ${d.today ? 'today' : ''}`}>
+              <span className="sw-dot" aria-hidden>
+                {d.on ? '🔥' : ''}
+              </span>
+              <span className="sw-label">{d.label}</span>
+              <span className="sr-only">{d.on ? 'Learned' : 'No lesson'}</span>
+            </li>
+          ))}
+        </ol>
+        {weak?.length > 0 && cp.done > 0 && (
+          <Link to="/practice" className="btn ghost wide weak-btn">
+            🎯 Practise {weak.length} weak {weak.length === 1 ? 'spot' : 'spots'}
+          </Link>
+        )}
+      </Card>
+
+      <Card className="quests-card">
+        <h2>Daily Quests</h2>
+        <div className="row-between small">
+          <span>🎯 Daily Goal</span>
+          <strong>
+            {Math.min(today, dailyLessons)}/{dailyLessons} {dailyLessons === 1 ? 'lesson' : 'lessons'}
+          </strong>
+        </div>
+        <ProgressBar value={today / dailyLessons} color="gold" height={12} label="Daily goal" />
         <ul className="quests" aria-label="Daily quests">
           {quests.map((q) => {
             const have = questProgress(q, qIn)
@@ -109,70 +165,6 @@ export default function Home() {
           })}
         </ul>
         {allClaimed && <p className="tiny good">All quests done. Streak freeze earned 🧊</p>}
-      </Card>
-
-      <Card className="course-card">
-        <div className="course-card-top">
-          <div className="card-hearts">
-            <span title="Streak" className="streak-chip">🔥 {streak}</span>
-            <span title="Hearts">❤️ {hearts}</span>
-          </div>
-          <span className="course-emoji">{course.emoji}</span>
-          <div>
-            <h1>{titleCase(course.title)}</h1>
-            {course.summary && <p className="muted">{course.summary}</p>}
-          </div>
-        </div>
-        <div className="row-between small">
-          <span>📊 Course Progress</span>
-          <strong>
-            {cp.done}/{cp.total} lessons · {Math.round(cp.ratio * 100)}%
-          </strong>
-        </div>
-        <ProgressBar value={cp.ratio} label="Course progress" />
-        {step ? null : (
-          <div className="complete-box">
-            <strong>🏆 Course Complete!</strong>
-            <span className="muted small">You finished every lesson and quiz.</span>
-            <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>
-              🚀 Add more lessons
-            </button>
-            <Link to="/create/topic" className="btn ghost wide">
-              💡 Find a new topic
-            </Link>
-            <div className="complete-actions">
-              <button className="btn blue" onClick={() => navigate('/practice')}>
-                💪 Practise
-              </button>
-            </div>
-          </div>
-        )}
-        <Link to="/courses" className="btn ghost wide change-course">
-          🔄 Change Course
-        </Link>
-      </Card>
-
-      <Card className="streak-week">
-        <div className="row-between small">
-          <span>🔥 {streak} day streak</span>
-          <span className="muted">Last 7 days</span>
-        </div>
-        <ol className="sw-days" aria-label="Days you learned this week">
-          {days.map((d) => (
-            <li key={d.k} className={`sw-day ${d.on ? 'on' : ''} ${d.today ? 'today' : ''}`}>
-              <span className="sw-dot" aria-hidden>
-                {d.on ? '🔥' : ''}
-              </span>
-              <span className="sw-label">{d.label}</span>
-              <span className="sr-only">{d.on ? 'Learned' : 'No lesson'}</span>
-            </li>
-          ))}
-        </ol>
-        {weak?.length > 0 && cp.done > 0 && (
-          <Link to="/practice" className="btn ghost wide weak-btn">
-            🎯 Practise {weak.length} weak {weak.length === 1 ? 'spot' : 'spots'}
-          </Link>
-        )}
       </Card>
 
       <h2 className="section-title">🗺️ Your Units</h2>
