@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { BookOpen } from 'lucide-react'
-import { learnedPhrases } from '../lib/learned'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
@@ -12,7 +11,7 @@ import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
-  const { courses, hearts, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak, freezes, reviewDay, daily, claimed, claimQuest } = useLearn()
+  const { courses, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak, freezes, reviewDay, daily, claimed, claimQuest } = useLearn()
   const navigate = useNavigate()
   const markStepsDone = useLearn((s) => s.markStepsDone)
   const [catchUp, setCatchUp] = useState<number | null>(null)
@@ -34,8 +33,6 @@ export default function Home() {
 
   const cp = courseProgress(course, progress)
   const step = nextStep(course, progress)
-  const nextTitle =
-    step?.kind === 'lesson' ? flatLessons(course).find((l) => l.id === step.id)?.title : step ? `${course.units[step.unitIndex].title} quiz` : undefined
   const isArchived = (archived ?? []).includes(course.id)
   const today = lessonsOn(dayKey(), lessonsByDay, progress)
   const day = dayKey()
@@ -54,10 +51,11 @@ export default function Home() {
     <div className="home-page">
       <Card className="course-card">
         <div className="course-card-top">
-          <div className="card-hearts">
-            <span title="Streak" className="streak-chip">🔥 {streak}</span>
-            <span title="Hearts">❤️ {hearts}</span>
-          </div>
+          {course.lang && (
+            <Link to="/phrasebook" className="corner-btn" aria-label="Phrasebook">
+              <BookOpen size={22} strokeWidth={2.25} aria-hidden />
+            </Link>
+          )}
           <span className="course-emoji">{course.emoji}</span>
           <div>
             <h1>{titleCase(course.title)}</h1>
@@ -73,13 +71,12 @@ export default function Home() {
         <ProgressBar value={cp.ratio} label="Course progress" />
         {step && (
           <button className="btn green wide today-go" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
-            <span>{step.kind === 'quiz' ? '🏆' : '🚀'}</span>
-            <span className="btn-text">{nextTitle && titleCase(nextTitle)}</span>
+            Continue Course
           </button>
         )}
         {reviewReady && (
           <Link to="/review" className={`btn ${reviewDay === day ? 'ghost' : 'blue'} wide`}>
-            {reviewDay === day ? '✅ Daily review done' : `🎯 Daily review${weak?.length ? ` · ${weak.length} weak ${weak.length === 1 ? 'spot' : 'spots'}` : ' · 5 questions'}`}
+            {reviewDay === day ? 'Daily Review · Done' : 'Daily Review'}
           </Link>
         )}
         {step ? null : (
@@ -99,14 +96,6 @@ export default function Home() {
             </div>
           </div>
         )}
-        {course.lang && (
-          <Link to="/phrasebook" className="btn blue wide">
-            <BookOpen size={20} strokeWidth={2.25} aria-hidden /> Phrasebook · {learnedPhrases(course, progress).length} learned
-          </Link>
-        )}
-        <Link to="/courses" className="btn ghost wide change-course">
-          🔄 Change Course
-        </Link>
       </Card>
 
       <Card className="streak-week">
@@ -262,6 +251,9 @@ export default function Home() {
           📦 Add to archive
         </button>
       )}
+      <Link to="/courses" className="btn ghost wide delete-course">
+        Change Course
+      </Link>
     </div>
   )
 }
