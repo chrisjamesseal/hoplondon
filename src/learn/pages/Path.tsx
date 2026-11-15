@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { flatLessons, nextStep, quizKey, stepDone, stepUnlocked } from '../lib/gamify'
-import { pickEmoji } from '../lib/emoji'
-import { courseColours } from '../lib/emojiColour'
+import { Check, Crown, Lock, Trophy } from 'lucide-react'
+import { iconFor } from '../lib/icons'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
 import { titleCase } from '../lib/titleCase'
 import { clearJustDone, peekJustDone } from '../lib/justDone'
+
+const COLOURS = ['green', 'blue', 'purple', 'orange', 'pink', 'teal'] as const
 
 // Horizontal offsets that make the lesson nodes snake down the page
 const SNAKE = [0, 44, 70, 44, 0, -44, -70, -44]
@@ -22,8 +24,7 @@ export default function Path() {
     const t = setTimeout(clearJustDone, 1500)
     return () => clearTimeout(t)
   }, [])
-  // Each unit gets the colour that suits its emoji best; emoji that still clash get a neutral plate
-  const colours = useMemo(() => (course ? courseColours(course) : []), [course])
+  // Pictures on the path are single colour line icons, so no picture can clash with the colour it sits on
 
   // Open the path at the next thing to do, sitting lower on screen so the steps just finished stay in view above it
   useEffect(() => {
@@ -66,7 +67,8 @@ export default function Path() {
       </h1>
 
       {course.units.map((unit, ui) => {
-        const { colour, plateUnit, plateLessons } = colours[ui]
+        const colour = COLOURS[ui % COLOURS.length]
+        const UnitIcon = iconFor(unit.title.replace(/^unit \d+:?\s*/i, ''), unit.emoji, ui, unit.description)
         const done = unit.lessons.filter((l) => progress[l.id]?.completions).length
         const quizId = quizKey(unit.id)
         const quizStep = { kind: 'quiz' as const, id: quizId, unitIndex: ui }
@@ -79,7 +81,9 @@ export default function Path() {
           <section key={unit.id} className="unit">
             <div className={`unit-banner ${colour}`}>
               <div className="unit-banner-top">
-                <span className={`unit-emoji ${plateUnit ? 'plate' : ''}`}>{pickEmoji(unit.emoji, `${unit.title} ${unit.description}`, ui)}</span>
+                <span className="unit-icon" aria-hidden>
+                  <UnitIcon size={34} strokeWidth={2.25} />
+                </span>
                 <div className="unit-banner-text">
                   <h2>{titleCase(unit.title)}</h2>
                   <p>{plainText(unit.description)}</p>
@@ -100,7 +104,7 @@ export default function Path() {
               )}
             </div>
             <div className="nodes">
-              {unit.lessons.map((lesson, li) => {
+              {unit.lessons.map((lesson) => {
                 const i = lessonIndex.get(lesson.id) ?? 0
                 const p = progress[lesson.id]
                 const unlocked = stepUnlocked(course, lesson.id, progress)
@@ -116,11 +120,14 @@ export default function Path() {
                       aria-label={`${lesson.title}${state === 'locked' ? ' (locked)' : ''}`}
                     >
                       {state === 'done' ? (
-                        p!.bestAccuracy >= 1 && !p!.skipped ? '👑' : '✓'
+                        p!.bestAccuracy >= 1 && !p!.skipped ? <Crown size={38} strokeWidth={2.25} aria-hidden /> : <Check size={42} strokeWidth={3} aria-hidden />
                       ) : state === 'locked' ? (
-                        '🔒'
+                        <Lock size={30} strokeWidth={2.25} aria-hidden />
                       ) : (
-                        <span className={`node-emoji ${plateLessons[li] ? 'plate' : ''}`}>{pickEmoji(lesson.emoji, lesson.title, i)}</span>
+                        (() => {
+                          const LessonIcon = iconFor(lesson.title, lesson.emoji, i)
+                          return <LessonIcon size={40} strokeWidth={2.25} aria-hidden />
+                        })()
                       )}
                     </button>
                     <div className="node-label">{titleCase(lesson.title)}</div>
@@ -135,7 +142,7 @@ export default function Path() {
                   onClick={() => navigate(`/quiz/${unit.id}`)}
                   aria-label={`${unit.title} quiz${quizOpen ? '' : ' (locked)'}`}
                 >
-                  {quizOpen || quizDone ? '🏆' : '🔒'}
+                  {quizOpen || quizDone ? <Trophy size={36} strokeWidth={2.25} aria-hidden /> : <Lock size={30} strokeWidth={2.25} aria-hidden />}
                 </button>
                 <div className="node-label">Unit Quiz</div>
               </div>
