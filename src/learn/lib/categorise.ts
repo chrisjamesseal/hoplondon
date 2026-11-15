@@ -17,6 +17,7 @@ const CATS = {
   finance: { id: 'finance', label: 'Finance', emoji: '📈' },
   health: { id: 'health', label: 'Health', emoji: '💪' },
   business: { id: 'business', label: 'Business', emoji: '💼' },
+  history: { id: 'history', label: 'History', emoji: '🏛️' },
   science: { id: 'science', label: 'Science', emoji: '🔬' },
   general: { id: 'general', label: 'General', emoji: '📚' },
 } satisfies Record<string, Category>
@@ -24,6 +25,7 @@ const CATS = {
 /** Order matters: the first rule that matches wins */
 const RULES: { cat: Category; re: RegExp }[] = [
   { cat: CATS.languages, re: /\b(german|french|spanish|italian|portuguese|japanese|korean|mandarin|chinese|arabic|dutch|swedish|polish|russian|turkish|greek|hindi|language|phrases|vocabulary|travellers|travelers)\b/i },
+  { cat: CATS.history, re: /\b(history|historical|histories|empires?|ancient|roman|romans|rome|greece|egypt\w*|medieval|middle ages|viking\w*|war|wars|wwi|wwii|world war|civili[sz]ations?|dynast\w*|kingdoms?|revolutions?|renaissance|victorian|tudors?|crusades?|colonial\w*|monarch\w*|pharaohs?|archaeolog\w*)\b/i },
   { cat: CATS.youtube, re: /\b(youtube|youtuber|mrbeast|vlog|vlogging|thumbnails?|video creators?|content creators?|channel growth)\b/i },
   { cat: CATS.sales, re: /\b(sales|selling|sell|leads?|closing|pipeline|prospecting|negotiat\w*|cold calls?|upsell\w*)\b/i },
   { cat: CATS.marketing, re: /\b(marketing|seo|brand\w*|advertis\w*|social media|copywriting|campaigns?|audiences?|newsletters?|email marketing)\b/i },
@@ -33,7 +35,7 @@ const RULES: { cat: Category; re: RegExp }[] = [
   { cat: CATS.finance, re: /\b(invest\w*|finance|financial|money|stocks?|budget\w*|tax|taxes|crypto\w*|pension|savings|mortgage)\b/i },
   { cat: CATS.health, re: /\b(health|fitness|nutrition|sleep|mental|workouts?|exercise|diet|yoga|wellbeing)\b/i },
   { cat: CATS.business, re: /\b(business|startups?|management|managing|leadership|strategy|productivity|entrepreneur\w*|operations)\b/i },
-  { cat: CATS.science, re: /\b(science|physics|chemistry|biology|astronomy|space|history|geography|maths?|mathematics|psychology)\b/i },
+  { cat: CATS.science, re: /\b(science|physics|chemistry|biology|astronomy|space|solar system|planets?|universe|geography|maths?|mathematics|psychology)\b/i },
 ]
 
 const OVERRIDES = Object.values(CATS)
