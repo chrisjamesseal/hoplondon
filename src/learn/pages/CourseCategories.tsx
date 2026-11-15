@@ -19,9 +19,9 @@ export default function CourseCategories() {
   const groups = groupByCategory(live)
   const [view, setView] = useState<'groups' | 'list'>(() => {
     try {
-      return localStorage.getItem('leap-courses-view') === 'list' ? 'list' : 'groups'
+      return localStorage.getItem('leap-courses-view') === 'groups' ? 'groups' : 'list'
     } catch {
-      return 'groups'
+      return 'list'
     }
   })
   const pick = (v: 'groups' | 'list') => {
