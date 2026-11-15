@@ -1,4 +1,4 @@
-import { House, Library, Map as MapIcon, Sparkles, UserRound } from 'lucide-react'
+import { CircleAlert, CircleCheck, House, Library, LoaderCircle, Map as MapIcon, Sparkles, UserRound } from 'lucide-react'
 import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useLearn } from './store'
@@ -36,8 +36,10 @@ function JobBanner() {
     <div className="jobs">
       {jobs.map((j) => (
         <div key={j.id} className={`job ${j.status}`}>
+          <span className={`job-icon ${j.status}`} role="img" aria-label={j.status === 'running' ? 'Writing' : j.status === 'done' ? 'Ready' : 'Failed'}>
+            {j.status === 'running' ? <LoaderCircle size={26} strokeWidth={2.5} /> : j.status === 'done' ? <CircleCheck size={26} strokeWidth={2.5} /> : <CircleAlert size={26} strokeWidth={2.5} />}
+          </span>
           <div className="job-text">
-            <strong>{j.status === 'running' ? '⏳ Writing' : j.status === 'done' ? '✅ Ready' : '😬 Failed'}</strong>
             <strong className="job-title">{j.title}</strong>
             {j.status === 'error' && <span className="tiny">{j.error}</span>}
           </div>
