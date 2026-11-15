@@ -28,7 +28,7 @@ const NAV = [
 
 /** Progress for courses being written in the background */
 function JobBanner() {
-  const { jobs, cancel, dismiss } = useJobs()
+  const { jobs, cancel, dismiss, retry } = useJobs()
   const setActive = useLearn((s) => s.setActiveCourse)
   const navigate = useNavigate()
   if (!jobs.length) return null
@@ -58,6 +58,11 @@ function JobBanner() {
               }}
             >
               Open
+            </button>
+          )}
+          {j.status === 'error' && (
+            <button className="btn green job-btn" onClick={() => retry(j.id)}>
+              Retry
             </button>
           )}
           {j.status !== 'running' && (

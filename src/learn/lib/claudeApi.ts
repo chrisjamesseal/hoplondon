@@ -67,6 +67,13 @@ const friendly = (status: number, message: string): string => {
   return message || 'Something went wrong talking to Claude.'
 }
 
+/** The connection died part way, usually because the phone locked or the app was in the background */
+export class ConnectionDropped extends Error {
+  constructor() {
+    super('The connection dropped while Claude was writing. Keep Leap open and try again.')
+  }
+}
+
 /** Sends the prompt to Claude and returns the full reply text */
 export async function generateText(o: GenerateOptions): Promise<string> {
   const content: unknown[] = []
@@ -93,7 +100,7 @@ export async function generateText(o: GenerateOptions): Promise<string> {
     res = await fetch(ENDPOINT, { method: 'POST', headers, body: JSON.stringify(body), signal: o.signal })
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') throw e
-    throw new Error("Couldn't reach Claude. Check your connection and try again.")
+    throw new ConnectionDropped()
   }
   if (!res.ok) {
     let message = ''
@@ -111,7 +118,14 @@ export async function generateText(o: GenerateOptions): Promise<string> {
   let buf = ''
   let all = ''
   for (;;) {
-    const { done, value } = await reader.read()
+    let chunk: ReadableStreamReadResult<Uint8Array>
+    try {
+      chunk = await reader.read()
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') throw e
+      throw new ConnectionDropped()
+    }
+    const { done, value } = chunk
     if (done) break
     buf += dec.decode(value, { stream: true })
     const cut = buf.lastIndexOf('\n')
