@@ -122,8 +122,10 @@ button:disabled { cursor: default; }
   text-transform: uppercase; font-weight: 800; font-size: 15px; letter-spacing: 0.5px;
 }
 .side-link:hover { background: var(--surface-2); }
-.side-link.active { color: var(--blue); background: var(--blue-soft); border-color: var(--blue); }
-.side-icon { font-size: 26px; }
+.side-link { color: var(--muted); }
+.side-link.active { color: var(--text); background: var(--surface-2); border-color: transparent; }
+.side-link:focus-visible { outline: 2px solid var(--muted); outline-offset: 2px; }
+.side-icon { display: inline-grid; place-items: center; }
 .content { flex: 1; min-width: 0; }
 .topbar {
   position: sticky; top: 0; z-index: 10; background: var(--bg);
@@ -658,8 +660,8 @@ button:disabled { cursor: default; }
   .side-link { flex: 1; justify-content: center; padding: 6px 0; border: 0; background: none; }
   .side-link:hover { background: none; }
   .side-link.active { background: none; }
-  .side-icon { display: grid; place-items: center; width: 44px; height: 36px; font-size: 24px; line-height: 1; border: 2px solid transparent; border-radius: 12px; }
-  .side-link.active .side-icon { background: var(--blue-soft); border-color: var(--blue); }
+  .side-icon { display: grid; place-items: center; width: 52px; height: 34px; border-radius: 17px; transition: background 0.2s, color 0.2s; }
+  .side-link.active .side-icon { background: var(--surface-2); }
 }
 
 /* a soft neutral plate behind an emoji that would otherwise clash with its card or button */
