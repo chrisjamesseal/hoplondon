@@ -2,6 +2,7 @@
   --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f7f7f7;
+  --tile: #f1f3f0;
   --border: #e5e5e5;
   --text: #3c3c3c;
   --muted: #777777;
@@ -40,6 +41,7 @@
     --bg: #131f24;
     --surface: #131f24;
     --surface-2: #202f36;
+    --tile: #0e171b;
     --border: #37464f;
     --text: #f1f7fb;
     --muted: #8a9ba5;
@@ -62,6 +64,7 @@
   --bg: #131f24;
   --surface: #131f24;
   --surface-2: #202f36;
+  --tile: #0e171b;
   --border: #37464f;
   --text: #f1f7fb;
   --muted: #8a9ba5;
@@ -982,3 +985,10 @@ input:not([type='checkbox']):not([type='radio']), textarea, select { font-size: 
 
 /* No pinch or double tap zoom: the app is built for one screen size */
 html, body { touch-action: pan-x pan-y; }
+
+/* My Courses: soft filled tiles, no outlines */
+.courses .cat-tile, .courses .card.course-row, .courses .archive-link {
+  background: var(--tile); border: 0; box-shadow: none;
+}
+.courses .cat-tile { padding: 16px 10px 14px; }
+.courses .archive-link { color: var(--blue); }
