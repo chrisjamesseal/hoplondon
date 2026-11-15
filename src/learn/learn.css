@@ -1031,4 +1031,4 @@ html, body { touch-action: pan-x pan-y; }
 .pr-audio:focus-visible { outline: 2px solid var(--muted); outline-offset: 2px; }
 .course-card .btn svg { vertical-align: -4px; margin-right: 6px; }
 
-.phrase-row.faded { opacity: 0.45; }
+.phrase-row.faded { opacity: 0.6; }
