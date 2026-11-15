@@ -451,7 +451,7 @@ button:disabled { cursor: default; }
 .prompt-box { margin-top: 10px; font-size: 14px; }
 .prompt-box summary { cursor: pointer; color: var(--blue); }
 .prompt-box textarea, .json-paste {
-  width: 100%; margin-top: 8px; font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
+  width: 100%; margin-top: 8px; font: 16px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--text);
   background: var(--surface-2); border: 2px solid var(--border); border-radius: 12px; padding: 10px; resize: vertical;
 }
 .or-label { display: block; text-align: center; margin: 12px 0 0; }
@@ -974,3 +974,6 @@ button:disabled { cursor: default; }
 .quests-card { display: flex; flex-direction: column; gap: 12px; }
 .quests-card h2 { margin: 0; font-size: 20px; }
 .quests-card .pbar, .course-card .pbar { flex: none; width: 100%; }
+
+/* iPhone zooms into any field with text smaller than 16px, so every field is at least that */
+input:not([type='checkbox']):not([type='radio']), textarea, select { font-size: max(16px, 1em); }
