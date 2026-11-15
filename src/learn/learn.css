@@ -1036,3 +1036,16 @@ html, body { touch-action: pan-x pan-y; }
 .corner-btn:active { transform: scale(0.94); }
 .corner-btn:focus-visible { outline: 2px solid var(--muted); outline-offset: 2px; }
 .phrase-row.faded { opacity: 0.6; }
+
+/* Daily review: a full width bar above the menu once a lesson is done */
+.home-page.has-review-bar { padding-bottom: 72px; }
+.review-bar {
+  position: sticky; bottom: 0; z-index: 19; margin: 16px -16px 0; padding: 16px; display: block; text-align: center; text-decoration: none;
+  background: var(--blue); color: #fff; font-weight: 800; font-size: 17px; letter-spacing: 0.06em; text-transform: uppercase;
+  animation: rise 0.4s cubic-bezier(.2,.9,.3,1) both;
+}
+.review-bar:active { filter: brightness(0.92); }
+.review-bar:focus-visible { outline: 3px solid #fff; outline-offset: -6px; }
+@media (max-width: 860px) {
+  .review-bar { position: fixed; left: 0; right: 0; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; }
+}
