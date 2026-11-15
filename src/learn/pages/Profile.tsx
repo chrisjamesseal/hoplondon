@@ -238,6 +238,11 @@ export default function Profile() {
           <input type="checkbox" checked={s.sound} onChange={(e) => s.setSound(e.target.checked)} />
           <span>Sound effects</span>
         </label>
+        <label className="toggle">
+          <input type="checkbox" checked={s.soundInSilent} disabled={!s.sound} onChange={(e) => s.setSoundInSilent(e.target.checked)} />
+          <span>Play sounds when my phone is on silent</span>
+        </label>
+        <p className="tiny muted">This can pause music playing in another app while a sound plays.</p>
         {resetAsk ? (
           <div className="confirm">
             <span className="small">Reset all XP, streaks and lesson progress?</span>
