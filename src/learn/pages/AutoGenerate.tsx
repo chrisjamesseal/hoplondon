@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useJobs } from '../jobs'
-import { getApiKey, getModel, MODELS, setApiKey, setModel } from '../lib/claudeApi'
+import { getApiKey, setApiKey } from '../lib/claudeApi'
 
 export type Mode = 'auto' | 'manual'
 
@@ -38,7 +38,6 @@ export default function AutoGenerate({ prompt, ready, pdf, readWeb, title, finis
   const start = useJobs((s) => s.start)
   const [key, setKey] = useState(getApiKey())
   const [draft, setDraft] = useState('')
-  const [model, setModelState] = useState(getModel())
   const [error, setError] = useState('')
 
   function saveKey() {
@@ -81,20 +80,6 @@ export default function AutoGenerate({ prompt, ready, pdf, readWeb, title, finis
 
   return (
     <div className="auto-box">
-      <div className="model-row" role="radiogroup" aria-label="Model">
-        {MODELS.map((m) => (
-          <button
-            key={m.id}
-            role="radio"
-            aria-checked={model === m.id}
-            className={model === m.id ? 'active' : ''}
-                        onClick={() => (setModel(m.id), setModelState(m.id))}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
-      <p className="tiny muted">{MODELS.find((m) => m.id === model)?.hint}</p>
       <button className="btn green wide" disabled={!ready} onClick={run}>
         {label}
       </button>
