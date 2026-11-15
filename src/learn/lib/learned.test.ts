@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { learnedPhrases } from './learned'
+import { learnedPhrases, phrasebookEntries } from './learned'
 import type { Course } from '../types'
 
 const ph = (text: string) => ({ text, meaning: text.toUpperCase() })
@@ -17,5 +17,13 @@ describe('learnedPhrases', () => {
   })
   it('is empty before any lesson is finished', () => {
     expect(learnedPhrases(course, {})).toEqual([])
+  })
+})
+
+describe('phrasebookEntries', () => {
+  it('lists every phrase once, marking the ones from finished lessons', () => {
+    const done = { completions: 1, bestAccuracy: 1, lastCompleted: 'x' }
+    const out = phrasebookEntries(course, { a: done })
+    expect(out.map((e) => [e.phrase.text, e.learned])).toEqual([['Hola', true], ['Adiós', true], ['Gracias', false], ['Sí', false]])
   })
 })
