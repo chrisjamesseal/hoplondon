@@ -39,6 +39,8 @@ export default function Home() {
   const quests = questsFor(day)
   const qIn = { day, lessons: today, xp: xpByDay[day] ?? 0, reviewDay, daily }
   const reviewReady = courses.some((c) => flatLessons(c).some((l) => progress[l.id]?.completions))
+  // Once a lesson is done today, the daily review waits in a bar above the menu until it is done
+  const showReview = reviewReady && today >= 1 && reviewDay !== day
   const allClaimed = (claimed ?? []).includes(questKey(day, 'all'))
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date()
@@ -48,7 +50,7 @@ export default function Home() {
   })
 
   return (
-    <div className="home-page">
+    <div className={`home-page ${showReview ? 'has-review-bar' : ''}`}>
       <Card className="course-card">
         <div className="course-card-top">
           {course.lang && (
@@ -73,11 +75,6 @@ export default function Home() {
           <button className="btn green wide today-go" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
             Continue Course
           </button>
-        )}
-        {reviewReady && (
-          <Link to="/review" className={`btn ${reviewDay === day ? 'ghost' : 'blue'} wide`}>
-            {reviewDay === day ? 'Daily Review · Done' : 'Daily Review'}
-          </Link>
         )}
         {step ? null : (
           <div className="complete-box">
@@ -254,6 +251,11 @@ export default function Home() {
       <Link to="/courses" className="btn ghost wide delete-course">
         Change Course
       </Link>
+      {showReview && (
+        <Link to="/review" className="review-bar">
+          Daily Review
+        </Link>
+      )}
     </div>
   )
 }
