@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { LayoutGrid, List } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress } from '../lib/gamify'
@@ -7,12 +9,31 @@ import { ragOf } from '../lib/rag'
 import { titleCase } from '../lib/titleCase'
 
 export default function CourseCategories() {
-  const { courses, progress, archived } = useLearn()
+  const { courses, progress, archived, setActiveCourse } = useLearn()
   const navigate = useNavigate()
   const active = useActiveCourse()
   const activeCp = active ? courseProgress(active, progress) : null
   const archivedIds = archived ?? []
-  const groups = groupByCategory(courses)
+  // Archived courses live on their own shelf, so they never count in the groups or the list
+  const live = courses.filter((c) => !archivedIds.includes(c.id))
+  const groups = groupByCategory(live)
+  const [view, setView] = useState<'groups' | 'list'>(() => {
+    try {
+      return localStorage.getItem('leap-courses-view') === 'list' ? 'list' : 'groups'
+    } catch {
+      return 'groups'
+    }
+  })
+  const pick = (v: 'groups' | 'list') => {
+    setView(v)
+    try {
+      localStorage.setItem('leap-courses-view', v)
+    } catch {
+      // Not remembered, still works
+    }
+  }
+  // The course being learned first, then the rest as they were added
+  const ordered = [...live].sort((a, b) => Number(b.id === active?.id) - Number(a.id === active?.id))
 
   return (
     <div className="courses">
@@ -25,7 +46,18 @@ export default function CourseCategories() {
         )}
       </div>
 
-      {groups.length === 0 ? (
+      {courses.length > 0 && (
+        <div className="view-toggle" role="group" aria-label="How to show courses">
+          <button type="button" className={view === 'groups' ? 'on' : ''} aria-pressed={view === 'groups'} onClick={() => pick('groups')}>
+            <LayoutGrid size={18} strokeWidth={2.25} aria-hidden /> Grouped
+          </button>
+          <button type="button" className={view === 'list' ? 'on' : ''} aria-pressed={view === 'list'} onClick={() => pick('list')}>
+            <List size={18} strokeWidth={2.25} aria-hidden /> List
+          </button>
+        </div>
+      )}
+
+      {courses.length === 0 ? (
         <Card className="empty">
           <div className="big-emoji">📚</div>
           <h2>No Courses Yet</h2>
@@ -36,7 +68,42 @@ export default function CourseCategories() {
         </Card>
       ) : (
         <>
-        {active && activeCp && (
+        {view === 'list' && (
+          <div className="course-list">
+            {ordered.length === 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
+            {ordered.map((c) => {
+              const cp = courseProgress(c, progress)
+              const isActive = c.id === active?.id
+              return (
+                <Card key={c.id} className={`course-row ${isActive ? 'active' : ''}`}>
+                  <button
+                    className="course-row-main"
+                    onClick={() => {
+                      setActiveCourse(c.id)
+                      navigate('/')
+                    }}
+                  >
+                    <span className="course-emoji">{c.emoji}</span>
+                    <div className="grow">
+                      <div className="row-between">
+                        <strong>{titleCase(c.title)}</strong>
+                        {isActive && <span className="pill">Learning</span>}
+                      </div>
+                      <div className="tiny muted">
+                        {c.units.length} units · {cp.total} lessons
+                      </div>
+                      <div className="row-between tiny">
+                        <ProgressBar value={cp.ratio} color={ragOf(cp.ratio)} height={10} label={`${c.title} progress`} />
+                        <span className={`pct rag-text ${ragOf(cp.ratio)}`}>{Math.round(cp.ratio * 100)}%</span>
+                      </div>
+                    </div>
+                  </button>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+        {view === 'groups' && active && activeCp && (
           <Card className="course-row active">
             <button className="course-row-main" onClick={() => navigate('/')}>
               <span className="course-emoji">{active.emoji}</span>
@@ -56,12 +123,11 @@ export default function CourseCategories() {
             </button>
           </Card>
         )}
+        {view === 'groups' && (
         <div className="cat-grid">
+          {groups.length === 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
           {groups.map(({ category, courses: list }) => {
-            // Progress covers courses still in progress; finished ones only count if that is all there is
-            const live = list.filter((c) => !archivedIds.includes(c.id))
-            const counted = live.length ? live : list
-            const totals = counted.reduce(
+            const totals = list.reduce(
               (t, c) => {
                 const cp = courseProgress(c, progress)
                 return { done: t.done + cp.done, total: t.total + cp.total }
@@ -81,6 +147,7 @@ export default function CourseCategories() {
             )
           })}
         </div>
+        )}
         <button className="btn ghost wide archive-link" onClick={() => navigate('/courses/archive')}>
           📦 Archive{archivedIds.length ? ` (${archivedIds.length})` : ''}
         </button>
