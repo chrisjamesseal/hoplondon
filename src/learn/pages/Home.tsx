@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { BookOpen } from 'lucide-react'
+import { learnedPhrases } from '../lib/learned'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
@@ -96,6 +98,11 @@ export default function Home() {
               </button>
             </div>
           </div>
+        )}
+        {course.lang && (
+          <Link to="/phrasebook" className="btn blue wide">
+            <BookOpen size={20} strokeWidth={2.25} aria-hidden /> Phrasebook · {learnedPhrases(course, progress).length} learned
+          </Link>
         )}
         <Link to="/courses" className="btn ghost wide change-course">
           🔄 Change Course
