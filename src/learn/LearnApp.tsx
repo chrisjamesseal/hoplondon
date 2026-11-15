@@ -2,6 +2,7 @@ import { House, Library, Map as MapIcon, Sparkles, UserRound } from 'lucide-reac
 import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useLearn } from './store'
+import { setPlayInSilent } from './lib/sound'
 import { useJobs } from './jobs'
 import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
@@ -82,6 +83,7 @@ function HeartsRow() {
 export default function LearnApp() {
   const syncHearts = useLearn((s) => s.syncHearts)
   const useFreezeIfNeeded = useLearn((s) => s.useFreezeIfNeeded)
+  const playInSilent = useLearn((s) => s.sound && s.soundInSilent)
   const location = useLocation()
   const { pathname } = location
   const inLesson = /^\/(lesson|practice|review|quiz|jump)/.test(pathname)
@@ -94,6 +96,15 @@ export default function LearnApp() {
   }, [syncHearts, useFreezeIfNeeded])
 
   useEffect(() => window.scrollTo(0, 0), [pathname])
+
+  // Sounds stay audible on a silent iPhone. Starting audio needs a tap, so it is also tried on the first one.
+  useEffect(() => {
+    setPlayInSilent(playInSilent)
+    if (!playInSilent) return
+    const again = () => setPlayInSilent(true)
+    document.addEventListener('pointerdown', again, { once: true })
+    return () => document.removeEventListener('pointerdown', again)
+  }, [playInSilent])
 
   if (inLesson) {
     // Keyed per visit so moving between sessions, or retrying a quiz, starts fresh

@@ -47,3 +47,33 @@ export function play(enabled: boolean, name: keyof typeof sounds) {
     // audio can be blocked until the first user gesture
   }
 }
+
+const SILENT_WAV = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA=='
+let keeper: HTMLAudioElement | null = null
+
+/**
+ * The iPhone silent switch mutes web sound unless the page asks for the
+ * "playback" audio category. Safari 16.4 and later has an API for that; older
+ * versions are tricked by quietly looping a silent clip. Either way the sounds
+ * of the app, and spoken phrases, are heard while the phone is on silent.
+ * (The catch: it can pause music playing in another app while a sound plays.)
+ */
+export function setPlayInSilent(on: boolean) {
+  try {
+    const session = (navigator as unknown as { audioSession?: { type: string } }).audioSession
+    if (session) {
+      session.type = on ? 'playback' : 'auto'
+      return
+    }
+    if (!on) {
+      keeper?.pause()
+      return
+    }
+    keeper ??= Object.assign(new Audio(SILENT_WAV), { loop: true })
+    void keeper.play().catch(() => {
+      // Needs a tap first: it is tried again on the next one
+    })
+  } catch {
+    // Not supported here: sounds follow the silent switch as usual
+  }
+}

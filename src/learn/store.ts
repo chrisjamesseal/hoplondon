@@ -24,6 +24,8 @@ interface LearnState {
   dailyGoal: number
   dailyLessons: number
   sound: boolean
+  /** Keep sounds audible when the iPhone is on silent */
+  soundInSilent: boolean
   /** Finished courses tucked away on the Courses page */
   archived: string[]
   /** Questions answered wrong, brought back first in practice until they are right */
@@ -60,6 +62,7 @@ interface LearnState {
   setDailyGoal: (n: number) => void
   setDailyLessons: (n: number) => void
   setSound: (on: boolean) => void
+  setSoundInSilent: (on: boolean) => void
   addWeak: (sig: string) => void
   clearWeak: (sig: string) => void
   resetProgress: () => void
@@ -82,6 +85,7 @@ export const useLearn = create<LearnState>()(
       dailyGoal: 30,
       dailyLessons: 2,
       sound: true,
+      soundInSilent: true,
       archived: [],
       weak: [],
       freezes: 1,
@@ -238,6 +242,7 @@ export const useLearn = create<LearnState>()(
       setDailyGoal: (dailyGoal) => set({ dailyGoal }),
       setDailyLessons: (dailyLessons) => set({ dailyLessons }),
       setSound: (sound) => set({ sound }),
+      setSoundInSilent: (soundInSilent) => set({ soundInSilent }),
       addWeak: (sig) => set((s) => ((s.weak ?? []).includes(sig) ? s : { weak: [...(s.weak ?? []), sig].slice(-WEAK_CAP) })),
       clearWeak: (sig) => set((s) => ((s.weak ?? []).includes(sig) ? { weak: (s.weak ?? []).filter((x) => x !== sig) } : s)),
       resetProgress: () => set({ weak: [], freezes: 1, daily: { day: '', combo: 0, perfect: 0 }, reviewDay: null, claimed: [], progress: {}, xp: 0, xpByDay: {}, lessonsByDay: {}, streak: 0, bestStreak: 0, lastActiveDay: null, hearts: MAX_HEARTS, heartsUpdatedAt: Date.now() }),
