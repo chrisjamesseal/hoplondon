@@ -54,7 +54,7 @@ export interface GenerateOptions {
   pdf?: File | null
   /** Let Claude open the web address in the prompt */
   readWeb?: boolean
-  onProgress?: (chars: number) => void
+  onProgress?: (chars: number, text: string) => void
   signal?: AbortSignal
 }
 
@@ -135,7 +135,7 @@ export async function generateText(o: GenerateOptions): Promise<string> {
     if (error) throw new Error(friendly(0, error))
     if (text) {
       all += text
-      o.onProgress?.(all.length)
+      o.onProgress?.(all.length, all)
     }
   }
   all += textFromSse(buf).text

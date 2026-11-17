@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Course, LessonProgress, Unit } from './types'
+import type { Course, Draft, LessonProgress, Unit } from './types'
 import { DEMO_COURSE } from './demo'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
 import { WEAK_CAP } from './lib/engage'
@@ -38,7 +38,13 @@ interface LearnState {
   /** Quest bonuses already taken, as day:quest */
   claimed: string[]
 
+  /** Courses still being written, saved as they go */
+  drafts: Draft[]
+
   addCourse: (c: Course) => void
+  saveDraft: (d: Draft) => void
+  patchDraft: (id: string, p: Partial<Draft>) => void
+  removeDraft: (id: string) => void
   /** Adds new units to the end of a course and raises its level, keeping all progress */
   extendCourse: (id: string, units: Unit[]) => void
   /** Swaps one difficulty level's units for rewritten ones, keeping progress by position */
@@ -92,7 +98,11 @@ export const useLearn = create<LearnState>()(
       daily: { day: '', combo: 0, perfect: 0 },
       reviewDay: null,
       claimed: [],
+      drafts: [],
 
+      saveDraft: (d) => set((s) => ({ drafts: [d, ...(s.drafts ?? []).filter((x) => x.id !== d.id)] })),
+      patchDraft: (id, p) => set((s) => ({ drafts: (s.drafts ?? []).map((d) => (d.id === id ? { ...d, ...p, updatedAt: Date.now() } : d)) })),
+      removeDraft: (id) => set((s) => ({ drafts: (s.drafts ?? []).filter((d) => d.id !== id) })),
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
       extendCourse: (id, units) =>
         set((s) => ({

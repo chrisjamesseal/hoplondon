@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { useLearn } from './store'
-import { ConnectionDropped, generateText, type GenerateOptions } from './lib/claudeApi'
+import { ConnectionDropped, generateText, getApiKey, type GenerateOptions } from './lib/claudeApi'
+import { parseCourseJson } from './lib/claudePrompt'
+import { normalizeCourse } from './lib/normalize'
+import type { Draft } from './types'
 
 export interface Job {
   id: string
@@ -38,7 +41,7 @@ const whenVisible = () =>
  * iOS cuts network streams when the app goes to the background. Keep the screen awake while
  * writing, and if the connection still drops, start again as soon as the app is back.
  */
-async function writeWithRetry(req: Omit<GenerateOptions, 'onProgress' | 'signal'>, signal: AbortSignal, onProgress: (n: number) => void): Promise<string> {
+async function writeWithRetry(getReq: () => Omit<GenerateOptions, 'onProgress' | 'signal'>, signal: AbortSignal, onProgress: (n: number, text: string) => void): Promise<string> {
   let lock: { release: () => Promise<void> } | null = null
   try {
     lock = (await (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock?.request('screen')) ?? null
@@ -48,10 +51,10 @@ async function writeWithRetry(req: Omit<GenerateOptions, 'onProgress' | 'signal'
   try {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await generateText({ ...req, signal, onProgress })
+        return await generateText({ ...getReq(), signal, onProgress })
       } catch (e) {
         if (!(e instanceof ConnectionDropped) || attempt >= 2) throw e
-        onProgress(0)
+        onProgress(0, '')
         await whenVisible()
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
       }
@@ -70,7 +73,7 @@ function run(id: string) {
   aborts.set(id, ctl)
   void (async () => {
     try {
-      const text = await writeWithRetry(job.req, ctl.signal, (chars) => patch({ chars }))
+      const text = await writeWithRetry(() => job.req, ctl.signal, (chars) => patch({ chars }))
       // Keep whatever course the learner is on; the banner offers to open the new one
       const before = useLearn.getState().activeCourseId
       const courseId = job.finish(text)
@@ -111,3 +114,112 @@ export const useJobs = create<JobsState>((set, get) => ({
     set({ jobs: get().jobs.filter((j) => j.id !== id) })
   },
 }))
+
+// ---- New courses: saved as they are written, so leaving the app never loses them ----
+
+const live = new Map<string, AbortController>()
+// The PDF can't be saved, so it is only kept while the app stays open
+const pdfs = new Map<string, File | null | undefined>()
+
+const unitsIn = (text: string): { head: Record<string, unknown>; units: unknown[] } | null => {
+  try {
+    const head = parseCourseJson(text) as Record<string, unknown>
+    return { head, units: Array.isArray(head.units) ? head.units : [] }
+  } catch {
+    return null
+  }
+}
+
+const get = (id: string) => useLearn.getState().drafts.find((d) => d.id === id)
+
+function continuePrompt(d: Draft): string {
+  const done = d.units.map((u, i) => `${i + 1}. ${String((u as { title?: unknown })?.title ?? 'Unit')}`).join('\n')
+  return `${d.prompt}
+
+I already have these units, so do not repeat them:
+${done}
+
+Carry on the same course. Write only the remaining units, numbered from "Unit ${d.units.length + 1}: ..." onwards, to finish the whole course. Use the same JSON format but with only the new units.`
+}
+
+/** Starts, or carries on, writing a saved course */
+export function runDraft(id: string) {
+  if (live.has(id) || !get(id)) return
+  const store = useLearn.getState()
+  const ctl = new AbortController()
+  live.set(id, ctl)
+  store.patchDraft(id, { status: 'writing', note: undefined })
+  let base: unknown[] = []
+  let last = 0
+  void (async () => {
+    try {
+      const text = await writeWithRetry(
+        () => {
+          const d = get(id)!
+          base = d.units
+          return { key: getApiKey(), prompt: base.length ? continuePrompt(d) : d.prompt, pdf: pdfs.get(id), readWeb: d.readWeb }
+        },
+        ctl.signal,
+        (_chars, t) => {
+          // Save about once a second; the last unit may still be half written, so it waits
+          if (Date.now() - last < 1000) return
+          last = Date.now()
+          const p = unitsIn(t)
+          if (!p) return
+          const done = p.units.slice(0, -1)
+          const h = p.head
+          useLearn.getState().patchDraft(id, {
+            units: [...base, ...done],
+            ...(base.length ? {} : { head: { title: typeof h.title === 'string' ? h.title : undefined, emoji: typeof h.emoji === 'string' ? h.emoji : undefined, summary: typeof h.summary === 'string' ? h.summary : undefined, lang: typeof h.lang === 'string' ? h.lang : undefined } }),
+          })
+        },
+      )
+      const p = unitsIn(text)
+      if (p) useLearn.getState().patchDraft(id, { units: [...base, ...p.units], ...(base.length ? {} : { head: { title: p.head.title as string, emoji: p.head.emoji as string, summary: p.head.summary as string, lang: p.head.lang as string } }) })
+      else if (!base.length) throw new Error('Claude sent something Leap could not read. Try again.')
+      finishDraft(id)
+    } catch (e) {
+      if (!(e instanceof DOMException && e.name === 'AbortError') && get(id)) {
+        useLearn.getState().patchDraft(id, { status: 'paused', note: e instanceof Error ? e.message : 'Something went wrong.' })
+      }
+    } finally {
+      live.delete(id)
+    }
+  })()
+}
+
+/** Turns what has been written so far into a real course */
+export function finishDraft(id: string) {
+  const d = get(id)
+  if (!d) return
+  const s = useLearn.getState()
+  try {
+    const course = normalizeCourse({ ...d.head, units: d.units }, d.source, 'claude')
+    live.get(id)?.abort()
+    // Keep whatever course the learner is on
+    const before = s.activeCourseId
+    s.addCourse(course)
+    if (before) s.setActiveCourse(before)
+    s.removeDraft(id)
+  } catch (e) {
+    s.patchDraft(id, { status: 'paused', note: e instanceof Error ? e.message : 'Could not build the course.' })
+  }
+}
+
+export function cancelDraft(id: string) {
+  live.get(id)?.abort()
+  useLearn.getState().removeDraft(id)
+}
+
+export function startDraft(title: string, source: Draft['source'], req: { prompt: string; pdf?: File | null; readWeb?: boolean }) {
+  const id = Math.random().toString(36).slice(2)
+  pdfs.set(id, req.pdf)
+  useLearn.getState().saveDraft({ id, title, source, prompt: req.prompt, readWeb: req.readWeb, units: [], status: 'writing', updatedAt: Date.now() })
+  runDraft(id)
+}
+
+/** After the app was closed or reloaded, nothing is writing any more, so mark those as paused */
+export function pauseStale() {
+  const s = useLearn.getState()
+  for (const d of s.drafts ?? []) if (d.status === 'writing' && !live.has(d.id)) s.patchDraft(d.id, { status: 'paused', note: 'Stopped when Leap closed. Tap to carry on.' })
+}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useJobs } from '../jobs'
+import { startDraft, useJobs } from '../jobs'
+import type { SourceKind } from '../types'
 import { getApiKey, setApiKey } from '../lib/claudeApi'
 
 export type Mode = 'auto' | 'manual'
@@ -30,10 +31,12 @@ interface Props {
   /** Turns Claude's reply into a saved course and returns its id; throw to report a problem */
   finish: (text: string) => string
   label: string
+  /** Set for a brand new course, which is then saved as it is written */
+  source?: { kind: SourceKind; label: string }
 }
 
 /** Starts writing the course in the background with the learner's own API key */
-export default function AutoGenerate({ prompt, ready, pdf, readWeb, title, finish, label }: Props) {
+export default function AutoGenerate({ prompt, ready, pdf, readWeb, title, finish, label, source }: Props) {
   const navigate = useNavigate()
   const start = useJobs((s) => s.start)
   const [key, setKey] = useState(getApiKey())
@@ -51,7 +54,8 @@ export default function AutoGenerate({ prompt, ready, pdf, readWeb, title, finis
 
   function run() {
     setError('')
-    start(title, { key, prompt, pdf, readWeb }, finish)
+    if (source) startDraft(title, source, { prompt, pdf, readWeb })
+    else start(title, { key, prompt, pdf, readWeb }, finish)
     navigate('/courses')
   }
 

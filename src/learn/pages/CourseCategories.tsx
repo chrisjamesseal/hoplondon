@@ -7,9 +7,11 @@ import { groupByCategory } from '../lib/categorise'
 import { Card, ProgressBar } from '../components'
 import { ragOf } from '../lib/rag'
 import { titleCase } from '../lib/titleCase'
+import DraftCards from './DraftCards'
 
 export default function CourseCategories() {
   const { courses, progress, archived, setActiveCourse } = useLearn()
+  const hasDrafts = (useLearn((s) => s.drafts) ?? []).length > 0
   const navigate = useNavigate()
   const active = useActiveCourse()
   const activeCp = active ? courseProgress(active, progress) : null
@@ -57,7 +59,9 @@ export default function CourseCategories() {
         </div>
       )}
 
-      {courses.length === 0 ? (
+      <DraftCards />
+
+      {courses.length === 0 && !hasDrafts ? (
         <Card className="empty">
           <div className="big-emoji">📚</div>
           <h2>No Courses Yet</h2>
@@ -70,7 +74,7 @@ export default function CourseCategories() {
         <>
         {view === 'list' && (
           <div className="course-list">
-            {ordered.length === 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
+            {ordered.length === 0 && courses.length > 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
             {ordered.map((c) => {
               const cp = courseProgress(c, progress)
               const isActive = c.id === active?.id
@@ -125,7 +129,7 @@ export default function CourseCategories() {
         )}
         {view === 'groups' && (
         <div className="cat-grid">
-          {groups.length === 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
+          {groups.length === 0 && courses.length > 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
           {groups.map(({ category, courses: list }) => {
             const totals = list.reduce(
               (t, c) => {

@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useLearn } from './store'
 import { setPlayInSilent } from './lib/sound'
-import { useJobs } from './jobs'
+import { pauseStale, useJobs } from './jobs'
 import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
 import Path from './pages/Path'
@@ -97,6 +97,7 @@ export default function LearnApp() {
   const inLesson = /^\/(lesson|practice|review|quiz|jump)/.test(pathname)
 
   useEffect(() => {
+    pauseStale()
     syncHearts()
     useFreezeIfNeeded()
     const t = setInterval(syncHearts, 30_000)

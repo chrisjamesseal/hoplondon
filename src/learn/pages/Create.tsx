@@ -305,6 +305,7 @@ export default function Create() {
             pdf={tab === 'pdf' ? file : null}
             readWeb={tab === 'link' && !isVideo}
             label="Generate course"
+            source={sourceLabel()}
             title={sourceLabel().label}
             finish={(t) => {
               const course = normalizeCourse(parseCourseJson(t), sourceLabel(), 'claude')

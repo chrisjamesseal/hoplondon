@@ -113,6 +113,22 @@ export interface Course {
   units: Unit[]
 }
 
+/** A course Claude is still writing. Saved as it goes so it survives leaving the app. */
+export interface Draft {
+  id: string
+  title: string
+  source: { kind: SourceKind; label: string }
+  prompt: string
+  readWeb?: boolean
+  /** Title, emoji, summary and language from the start of Claude's reply */
+  head?: { title?: string; emoji?: string; summary?: string; lang?: string }
+  /** Units Claude has finished writing so far, in the raw reply format */
+  units: unknown[]
+  status: 'writing' | 'paused'
+  note?: string
+  updatedAt: number
+}
+
 export interface LessonProgress {
   completions: number
   bestAccuracy: number

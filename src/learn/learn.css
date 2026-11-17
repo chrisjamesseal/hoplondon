@@ -1059,3 +1059,14 @@ html, body { touch-action: pan-x pan-y; }
 @media (max-width: 860px) {
   .review-bar { position: fixed; left: 0; right: 0; bottom: calc(60px + env(safe-area-inset-bottom, 0px)); margin: 0; }
 }
+
+/* Courses still being written */
+.draft-list { margin-bottom: 0; }
+.draft-list + .course-list, .draft-list + .cat-grid, .draft-list + .card { margin-top: 12px; }
+.draft-list { gap: 12px; }
+.draft-badge { margin: 6px 0 8px; }
+.pill { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.pill.blue-pill { background: var(--blue); }
+.pill .spin { animation: job-spin 0.9s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .pill .spin { animation-duration: 2.5s; } }
+.draft-note { margin: 10px 0 0; }
