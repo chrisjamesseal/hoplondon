@@ -8,10 +8,11 @@ import { Card, ProgressBar } from '../components'
 import { ragOf } from '../lib/rag'
 import { titleCase } from '../lib/titleCase'
 import DraftCards from './DraftCards'
+import { BuildStatus } from './BuildStatus'
 
 export default function CourseCategories() {
   const { courses, progress, archived, setActiveCourse } = useLearn()
-  const hasDrafts = (useLearn((s) => s.drafts) ?? []).length > 0
+  const hasDrafts = (useLearn((s) => s.drafts) ?? []).some((d) => !d.courseId)
   const navigate = useNavigate()
   const active = useActiveCourse()
   const activeCp = active ? courseProgress(active, progress) : null
@@ -102,6 +103,7 @@ export default function CourseCategories() {
                       </div>
                     </div>
                   </button>
+                  <BuildStatus course={c} />
                 </Card>
               )
             })}
@@ -125,6 +127,7 @@ export default function CourseCategories() {
                 </div>
               </div>
             </button>
+            <BuildStatus course={active} />
           </Card>
         )}
         {view === 'groups' && (

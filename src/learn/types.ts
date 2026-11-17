@@ -107,10 +107,19 @@ export interface Course {
   level?: number
   /** Optional general heading such as sales or youtube; worked out from the title when missing */
   category?: string
+  /** Set while Claude is still writing later lessons; draftId points at the saved job and total is how many lessons are planned */
+  building?: { draftId: string; total: number }
   source: { kind: SourceKind; label: string }
   generator: 'claude' | 'offline' | 'demo'
   createdAt: string
   units: Unit[]
+}
+
+export interface OutlineUnit {
+  title: string
+  emoji?: string
+  description?: string
+  lessons: { title: string; emoji?: string; why?: string }[]
 }
 
 /** A course Claude is still writing. Saved as it goes so it survives leaving the app. */
@@ -122,9 +131,17 @@ export interface Draft {
   readWeb?: boolean
   /** Title, emoji, summary and language from the start of Claude's reply */
   head?: { title?: string; emoji?: string; summary?: string; lang?: string }
-  /** Units Claude has finished writing so far, in the raw reply format */
+  /** The plan Claude wrote first: units and lesson titles. Lessons are then written one at a time. */
+  outline?: OutlineUnit[]
+  /** Units built so far, each holding the lessons (and quiz) written so far, in the raw reply format */
   units: unknown[]
   status: 'writing' | 'paused'
+  /** The playable course made from the first lesson on, which later lessons are added to */
+  courseId?: string
+  /** What is being written right now */
+  activity?: string
+  /** Paused by the connection or the app closing, so it can carry on by itself when the app is back */
+  auto?: boolean
   note?: string
   updatedAt: number
 }

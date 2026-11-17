@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { useLearn } from './store'
 import { setPlayInSilent } from './lib/sound'
-import { pauseStale, useJobs } from './jobs'
+import { pauseStale, resumeInterrupted, useJobs } from './jobs'
 import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
 import Path from './pages/Path'
@@ -98,13 +98,21 @@ export default function LearnApp() {
 
   useEffect(() => {
     pauseStale()
+    resumeInterrupted()
+    const back = () => document.visibilityState === 'visible' && resumeInterrupted()
+    document.addEventListener('visibilitychange', back)
     syncHearts()
     useFreezeIfNeeded()
     const t = setInterval(syncHearts, 30_000)
-    return () => clearInterval(t)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', back)
+    }
   }, [syncHearts, useFreezeIfNeeded])
 
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   // Sounds stay audible on a silent iPhone. Starting audio needs a tap, so it is also tried on the first one.
   useEffect(() => {

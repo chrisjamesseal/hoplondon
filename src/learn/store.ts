@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Course, Draft, LessonProgress, Unit } from './types'
+import type { Course, Draft, Exercise, Lesson, LessonProgress, Unit } from './types'
+import { uid } from './lib/normalize'
 import { DEMO_COURSE } from './demo'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
 import { WEAK_CAP } from './lib/engage'
@@ -42,6 +43,11 @@ interface LearnState {
   drafts: Draft[]
 
   addCourse: (c: Course) => void
+  /** Adds a finished lesson to a course still being written, starting its unit if needed */
+  appendLesson: (courseId: string, unit: { title: string; emoji?: string; description?: string }, index: number, lesson: Lesson) => void
+  setUnitQuiz: (courseId: string, index: number, quiz: Exercise[] | undefined) => void
+  /** The course has all the lessons it will get */
+  endBuilding: (courseId: string) => void
   saveDraft: (d: Draft) => void
   patchDraft: (id: string, p: Partial<Draft>) => void
   removeDraft: (id: string) => void
@@ -100,6 +106,20 @@ export const useLearn = create<LearnState>()(
       claimed: [],
       drafts: [],
 
+      appendLesson: (courseId, unit, index, lesson) =>
+        set((s) => ({
+          courses: s.courses.map((c) => {
+            if (c.id !== courseId) return c
+            const units = [...c.units]
+            const u = units[index] ?? { id: uid('u_'), title: unit.title, emoji: unit.emoji, description: unit.description ?? '', lessons: [] }
+            units[index] = { ...u, lessons: [...u.lessons, lesson] }
+            return { ...c, units }
+          }),
+        })),
+      setUnitQuiz: (courseId, index, quiz) =>
+        set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, units: c.units.map((u, i) => (i === index ? { ...u, quiz } : u)) } : c)) })),
+      endBuilding: (courseId) =>
+        set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, building: undefined } : c)) })),
       saveDraft: (d) => set((s) => ({ drafts: [d, ...(s.drafts ?? []).filter((x) => x.id !== d.id)] })),
       patchDraft: (id, p) => set((s) => ({ drafts: (s.drafts ?? []).map((d) => (d.id === id ? { ...d, ...p, updatedAt: Date.now() } : d)) })),
       removeDraft: (id) => set((s) => ({ drafts: (s.drafts ?? []).filter((d) => d.id !== id) })),

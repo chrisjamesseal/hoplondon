@@ -140,3 +140,18 @@ export function normalizeCourse(raw: unknown, source: { kind: SourceKind; label:
     units,
   }
 }
+
+/** One lesson from Claude's reply, or null when it has too few usable exercises */
+export function normalizeLesson(raw: unknown, source: { kind: SourceKind; label: string }): Lesson | null {
+  try {
+    return normalizeCourse({ units: [{ title: 'Unit', lessons: [raw] }] }, source, 'claude').units[0].lessons[0]
+  } catch {
+    return null
+  }
+}
+
+/** A unit quiz needs at least 3 usable questions */
+export function normalizeQuiz(raw: unknown): Exercise[] | undefined {
+  const quiz = (Array.isArray(raw) ? raw : []).map(normalizeExercise).filter((e): e is Exercise => !!e)
+  return quiz.length >= 3 ? quiz : undefined
+}

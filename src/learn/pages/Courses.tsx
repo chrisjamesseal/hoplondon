@@ -7,6 +7,7 @@ import type { Course } from '../types'
 import { titleCase } from '../lib/titleCase'
 import { categoryById, categoryOf } from '../lib/categorise'
 import { ragOf } from '../lib/rag'
+import { BuildStatus } from './BuildStatus'
 
 export default function Courses() {
   const { courses, progress, activeCourseId, setActiveCourse, archived, unarchiveCourse, deleteCourse } = useLearn()
@@ -48,6 +49,7 @@ export default function Courses() {
             </div>
           </div>
         </button>
+        {!inArchive && <BuildStatus course={c} />}
         {inArchive &&
           (confirmId === c.id ? (
             <div className="archive-confirm">

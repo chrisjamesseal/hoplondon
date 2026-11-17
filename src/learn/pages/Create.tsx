@@ -60,7 +60,9 @@ export default function Create() {
   const pdfRef = useRef<HTMLInputElement>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
 
-  useEffect(() => setCopied(null), [tab, topic, link, file, langId, transcript])
+  useEffect(() => {
+    setCopied(null)
+  }, [tab, topic, link, file, langId, transcript])
 
   const isVideo = tab === 'link' && isYouTubeUrl(link)
   const cleaned = cleanTranscript(transcript)

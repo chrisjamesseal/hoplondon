@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
 import { pickEmoji } from '../lib/emoji'
+import { useBuilding, WritingNext } from './BuildStatus'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
 import { questProgress, questsFor, questKey, QUEST_BONUS_XP } from '../lib/quests'
@@ -11,6 +12,7 @@ import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
 export default function Home() {
   const course = useActiveCourse()
+  const building = useBuilding(course)
   const { courses, progress, lessonsByDay, xpByDay, dailyLessons, archived, archiveCourse, weak, freezes, reviewDay, daily, claimed, claimQuest } = useLearn()
   const navigate = useNavigate()
   const markStepsDone = useLearn((s) => s.markStepsDone)
@@ -76,7 +78,8 @@ export default function Home() {
             Continue Course
           </button>
         )}
-        {step ? null : (
+        {!step && building && <WritingNext draft={building} />}
+        {step || building ? null : (
           <div className="complete-box">
             <strong>🏆 Course Complete!</strong>
             <span className="muted small">You finished every lesson and quiz.</span>
