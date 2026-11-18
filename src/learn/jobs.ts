@@ -45,7 +45,9 @@ const whenVisible = () =>
 async function writeWithRetry(getReq: () => Omit<GenerateOptions, 'onProgress' | 'signal'>, signal: AbortSignal, onProgress: (n: number, text: string) => void): Promise<string> {
   let lock: { release: () => Promise<void> } | null = null
   try {
-    lock = (await (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock?.request('screen')) ?? null
+    // Never let this hold up the writing: on some phones it can hang
+    const ask = (navigator as unknown as { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } }).wakeLock?.request('screen')
+    lock = (await Promise.race([ask, new Promise<undefined>((r) => setTimeout(r, 2000))])) ?? null
   } catch {
     /* not available */
   }
@@ -54,7 +56,7 @@ async function writeWithRetry(getReq: () => Omit<GenerateOptions, 'onProgress' |
       try {
         return await generateText({ ...getReq(), signal, onProgress })
       } catch (e) {
-        if (!(e instanceof ConnectionDropped) || attempt >= 2) throw e
+        if (!(e instanceof ConnectionDropped) || attempt >= 3) throw e
         onProgress(0, '')
         await whenVisible()
         if (signal.aborted) throw new DOMException('Aborted', 'AbortError')
@@ -142,7 +144,7 @@ export function runDraft(id: string) {
         const step = nextStep(d)
         if (!step) break
         patch({ activity: describeStep(d, step) })
-        const text = await writeWithRetry(() => ({ key: getApiKey(), prompt: promptFor(get(id)!, step), pdf: pdfs.get(id), readWeb: d.readWeb }), ctl.signal, () => {})
+        const text = await writeWithRetry(() => ({ key: getApiKey(), prompt: promptFor(get(id)!, step), pdf: pdfs.get(id), readWeb: d.readWeb, maxTokens: step.kind === 'lesson' ? 12000 : 8000 }), ctl.signal, () => {})
         const cur = get(id)
         if (!cur) return
         const obj = parseCourseJson(text) as Record<string, unknown>

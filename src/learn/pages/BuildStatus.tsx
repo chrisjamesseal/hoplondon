@@ -1,6 +1,7 @@
 import { LoaderCircle } from 'lucide-react'
 import { useLearn } from '../store'
 import { cancelDraft, finishDraft, runDraft } from '../jobs'
+import { progressOf } from '../lib/draftSteps'
 import type { Course, Draft } from '../types'
 
 /** The saved job for a course that is still being written */
@@ -29,7 +30,7 @@ export function BuildStatus({ course }: { course: Course }) {
       </p>
       {!writing && (
         <button className="btn green wide archive-delete" onClick={() => runDraft(d.id)}>
-          Continue writing
+          {progressOf(d).lessons ? 'Continue writing' : 'Try again'}
         </button>
       )}
       <button className="btn ghost wide archive-delete" onClick={() => (writing ? finishDraft(d.id) : cancelDraft(d.id))}>
