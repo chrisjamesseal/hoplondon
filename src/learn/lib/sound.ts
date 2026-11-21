@@ -108,7 +108,8 @@ export function setPlayInSilent(on: boolean) {
   wanted = on
   try {
     const s = session()
-    if (s) s.type = on ? 'playback' : 'auto'
+    // 'ambient' lets our sounds mix with music from other apps instead of pausing it
+    if (s) s.type = on ? 'playback' : 'ambient'
     if (on) {
       startKeeper()
       arm()
