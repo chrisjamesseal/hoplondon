@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BookOpen } from 'lucide-react'
+import { ArrowLeftRight, BookOpen } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
 import { courseProgress, dayKey, stepsBeforeUnit, stepsThroughLesson, flatLessons, lessonsOn, liveStreak, nextStep } from '../lib/gamify'
@@ -80,9 +80,14 @@ export default function Home() {
         </div>
         <ProgressBar value={cp.ratio} label="Course progress" />
         {step && (
-          <button className="btn green wide today-go" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
-            Continue Course
-          </button>
+          <div className="continue-row">
+            <button className="btn green today-go" onClick={() => navigate(step.kind === 'lesson' ? `/lesson/${step.id}` : `/quiz/${course.units[step.unitIndex].id}`)}>
+              Continue Course
+            </button>
+            <Link to="/courses" className="btn ghost switch-course" aria-label="Switch course" title="Switch course">
+              <ArrowLeftRight size={22} strokeWidth={2.5} aria-hidden />
+            </Link>
+          </div>
         )}
         {!step && building && <WritingNext draft={building} />}
         {step || building ? null : (
