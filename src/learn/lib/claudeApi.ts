@@ -4,6 +4,13 @@
  */
 export const KEY_SLOT = 'leap-api-key'
 export const MODEL = 'claude-sonnet-5-5'
+/** Dollars per million tokens for MODEL. Update these if Anthropic changes its prices. */
+export const PRICE = { input: 2, output: 10 }
+/** Estimated cost in dollars of a request that used these tokens */
+export const costOf = (u: { input: number; output: number }): number => (u.input * PRICE.input + u.output * PRICE.output) / 1e6
+/** For a course card: what writing it cost, or nothing if Claude didn't write it */
+export const costText = (usd?: number): string => (usd ? ` · cost about ${usd < 0.01 ? 'under $0.01' : '$' + usd.toFixed(2)}` : '')
+
 const ENDPOINT = 'https://api.anthropic.com/v1/messages'
 const MAX_PDF_BYTES = 30 * 1024 * 1024
 
@@ -32,20 +39,28 @@ const toBase64 = (file: File): Promise<string> =>
   })
 
 /** Pulls the streamed text out of Anthropic's server sent events */
-export function textFromSse(chunk: string): { text: string; error?: string } {
+export function textFromSse(chunk: string): { text: string; error?: string; input?: number; output?: number } {
   let text = ''
   let error: string | undefined
+  let input: number | undefined
+  let output: number | undefined
   for (const line of chunk.split('\n')) {
     if (!line.startsWith('data:')) continue
     try {
       const ev = JSON.parse(line.slice(5).trim())
       if (ev.type === 'content_block_delta' && ev.delta?.type === 'text_delta') text += ev.delta.text
       else if (ev.type === 'error') error = ev.error?.message ?? 'Claude had a problem.'
+      // Token counts arrive at the start and grow in later message_delta events
+      const u = ev.type === 'message_start' ? ev.message?.usage : ev.type === 'message_delta' ? ev.usage : undefined
+      if (u) {
+        if (typeof u.input_tokens === 'number') input = u.input_tokens
+        if (typeof u.output_tokens === 'number') output = u.output_tokens
+      }
     } catch {
       /* partial line, ignore */
     }
   }
-  return { text, error }
+  return { text, error, input, output }
 }
 
 export interface GenerateOptions {
@@ -58,6 +73,8 @@ export interface GenerateOptions {
   signal?: AbortSignal
   /** Cap on what Claude writes; short steps finish faster */
   maxTokens?: number
+  /** Told the estimated cost in dollars once the request ends, even if it failed part way */
+  onCost?: (usd: number) => void
 }
 
 const friendly = (status: number, message: string): string => {
@@ -121,6 +138,7 @@ export async function generateText(o: GenerateOptions): Promise<string> {
     }
     throw new ConnectionDropped()
   }
+  const used = { input: 0, output: 0 }
   try {
     bump()
     let res: Response
@@ -144,6 +162,10 @@ export async function generateText(o: GenerateOptions): Promise<string> {
     const dec = new TextDecoder()
     let buf = ''
     let all = ''
+    const take = (r: { input?: number; output?: number }) => {
+      if (r.input !== undefined) used.input = Math.max(used.input, r.input)
+      if (r.output !== undefined) used.output = Math.max(used.output, r.output)
+    }
     for (;;) {
       let chunk: ReadableStreamReadResult<Uint8Array>
       try {
@@ -157,7 +179,9 @@ export async function generateText(o: GenerateOptions): Promise<string> {
       buf += dec.decode(value, { stream: true })
       const cut = buf.lastIndexOf('\n')
       if (cut < 0) continue
-      const { text, error } = textFromSse(buf.slice(0, cut))
+      const r = textFromSse(buf.slice(0, cut))
+      const { text, error } = r
+      take(r)
       buf = buf.slice(cut + 1)
       if (error) throw new Error(friendly(0, error))
       if (text) {
@@ -165,10 +189,13 @@ export async function generateText(o: GenerateOptions): Promise<string> {
         o.onProgress?.(all.length, all)
       }
     }
-    all += textFromSse(buf).text
+    const last = textFromSse(buf)
+    take(last)
+    all += last.text
     if (!all.trim()) throw new Error('Claude sent an empty reply. Try again.')
     return all
   } finally {
+    if (used.input || used.output) o.onCost?.(costOf(used))
     clearTimeout(idle)
     clearTimeout(hard)
     o.signal?.removeEventListener('abort', onAbort)

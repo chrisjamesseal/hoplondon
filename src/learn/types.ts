@@ -111,6 +111,8 @@ export interface Course {
   building?: { draftId: string; total: number }
   source: { kind: SourceKind; label: string }
   generator: 'claude' | 'offline' | 'demo'
+  /** Estimated dollars spent on Claude writing this course */
+  cost?: number
   createdAt: string
   units: Unit[]
 }
@@ -143,6 +145,8 @@ export interface Draft {
   /** Paused by the connection or the app closing, so it can carry on by itself when the app is back */
   auto?: boolean
   note?: string
+  /** Estimated dollars spent so far, moved onto the course once it exists */
+  cost?: number
   updatedAt: number
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { textFromSse } from './claudeApi'
+import { costOf, textFromSse } from './claudeApi'
 
 describe('textFromSse', () => {
   it('collects text deltas', () => {
@@ -8,5 +8,11 @@ describe('textFromSse', () => {
   })
   it('reports stream errors', () => {
     expect(textFromSse('data: {"type":"error","error":{"message":"Overloaded"}}').error).toBe('Overloaded')
+  })
+  it('reads token counts for the cost', () => {
+    const chunk = 'data: {"type":"message_start","message":{"usage":{"input_tokens":1000,"output_tokens":1}}}\ndata: {"type":"message_delta","usage":{"output_tokens":2000}}'
+    const r = textFromSse(chunk)
+    expect(r).toMatchObject({ input: 1000, output: 2000 })
+    expect(costOf({ input: 1000, output: 2000 })).toBeCloseTo(0.022)
   })
 })

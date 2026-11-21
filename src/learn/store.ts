@@ -48,6 +48,7 @@ interface LearnState {
   setUnitQuiz: (courseId: string, index: number, quiz: Exercise[] | undefined) => void
   /** The course has all the lessons it will get */
   endBuilding: (courseId: string) => void
+  addCost: (courseId: string, usd: number) => void
   saveDraft: (d: Draft) => void
   patchDraft: (id: string, p: Partial<Draft>) => void
   removeDraft: (id: string) => void
@@ -120,6 +121,8 @@ export const useLearn = create<LearnState>()(
         set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, units: c.units.map((u, i) => (i === index ? { ...u, quiz } : u)) } : c)) })),
       endBuilding: (courseId) =>
         set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, building: undefined } : c)) })),
+      addCost: (courseId, usd) =>
+        set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, cost: (c.cost ?? 0) + usd } : c)) })),
       saveDraft: (d) => set((s) => ({ drafts: [d, ...(s.drafts ?? []).filter((x) => x.id !== d.id)] })),
       patchDraft: (id, p) => set((s) => ({ drafts: (s.drafts ?? []).map((d) => (d.id === id ? { ...d, ...p, updatedAt: Date.now() } : d)) })),
       removeDraft: (id) => set((s) => ({ drafts: (s.drafts ?? []).filter((d) => d.id !== id) })),

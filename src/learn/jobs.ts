@@ -42,7 +42,7 @@ const whenVisible = () =>
  * iOS cuts network streams when the app goes to the background. Keep the screen awake while
  * writing, and if the connection still drops, start again as soon as the app is back.
  */
-async function writeWithRetry(getReq: () => Omit<GenerateOptions, 'onProgress' | 'signal'>, signal: AbortSignal, onProgress: (n: number, text: string) => void): Promise<string> {
+async function writeWithRetry(getReq: () => Omit<GenerateOptions, 'onProgress' | 'signal'>, signal: AbortSignal, onProgress: (n: number, text: string) => void, onCost?: (usd: number) => void): Promise<string> {
   let lock: { release: () => Promise<void> } | null = null
   try {
     // Never let this hold up the writing: on some phones it can hang
@@ -54,7 +54,7 @@ async function writeWithRetry(getReq: () => Omit<GenerateOptions, 'onProgress' |
   try {
     for (let attempt = 0; ; attempt++) {
       try {
-        return await generateText({ ...getReq(), signal, onProgress })
+        return await generateText({ ...getReq(), signal, onProgress, onCost })
       } catch (e) {
         if (!(e instanceof ConnectionDropped) || attempt >= 3) throw e
         onProgress(0, '')
@@ -76,10 +76,12 @@ function run(id: string) {
   aborts.set(id, ctl)
   void (async () => {
     try {
-      const text = await writeWithRetry(() => job.req, ctl.signal, (chars) => patch({ chars }))
+      let spent = 0
+      const text = await writeWithRetry(() => job.req, ctl.signal, (chars) => patch({ chars }), (usd) => (spent += usd))
       // Keep whatever course the learner is on; the banner offers to open the new one
       const before = useLearn.getState().activeCourseId
       const courseId = job.finish(text)
+      if (courseId && spent) useLearn.getState().addCost(courseId, spent)
       if (before) useLearn.getState().setActiveCourse(before)
       patch({ status: 'done', courseId })
       requests.delete(id)
@@ -133,6 +135,13 @@ export function runDraft(id: string) {
   const ctl = new AbortController()
   live.set(id, ctl)
   const patch = (p: Partial<Draft>) => get(id) && useLearn.getState().patchDraft(id, p)
+  // Every attempt is paid for, so count it on the course, or on the draft until the course exists
+  const spend = (usd: number) => {
+    const d = get(id)
+    if (!d) return
+    if (d.courseId) useLearn.getState().addCost(d.courseId, usd)
+    else patch({ cost: (d.cost ?? 0) + usd })
+  }
   patch({ status: 'writing', note: undefined, auto: false })
   void (async () => {
     // A hiccup on one step (Claude busy, a reply that would not read) is tried again before the course pauses
@@ -146,7 +155,7 @@ export function runDraft(id: string) {
           const step = nextStep(d)
           if (!step) break
           patch({ activity: describeStep(d, step) })
-          const text = await writeWithRetry(() => ({ key: getApiKey(), prompt: promptFor(get(id)!, step), pdf: pdfs.get(id), readWeb: d.readWeb, maxTokens: step.kind === 'lesson' ? 12000 : 8000 }), ctl.signal, () => {})
+          const text = await writeWithRetry(() => ({ key: getApiKey(), prompt: promptFor(get(id)!, step), pdf: pdfs.get(id), readWeb: d.readWeb, maxTokens: step.kind === 'lesson' ? 12000 : 8000 }), ctl.signal, () => {}, spend)
           const cur = get(id)
           if (!cur) return
           const obj = parseCourseJson(text) as Record<string, unknown>
@@ -169,6 +178,7 @@ export function runDraft(id: string) {
                 throw incomplete
               }
               course.building = { draftId: id, total: cur.outline!.reduce((n, u) => n + u.lessons.length, 0) }
+              course.cost = get(id)?.cost
               const before = st.activeCourseId
               st.addCourse(course)
               if (before) st.setActiveCourse(before)

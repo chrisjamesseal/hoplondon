@@ -8,6 +8,7 @@ import { titleCase } from '../lib/titleCase'
 import { categoryById, categoryOf } from '../lib/categorise'
 import { ragOf } from '../lib/rag'
 import { BuildStatus } from './BuildStatus'
+import { costText } from '../lib/claudeApi'
 
 export default function Courses() {
   const { courses, progress, activeCourseId, setActiveCourse, archived, unarchiveCourse, deleteCourse } = useLearn()
@@ -42,6 +43,7 @@ export default function Courses() {
             </div>
             <div className="tiny muted">
               {c.units.length} units · {cp.total} lessons
+              {costText(c.cost)}
             </div>
             <div className="row-between tiny">
               <ProgressBar value={cp.ratio} color={ragOf(cp.ratio)} height={10} label={`${c.title} progress`} />
