@@ -7,6 +7,7 @@ import { pickEmoji } from '../lib/emoji'
 import { useBuilding, WritingNext } from './BuildStatus'
 import { plainText } from './RichText'
 import { Card, ProgressBar } from '../components'
+import { costText } from '../lib/claudeApi'
 import { questProgress, questsFor, questKey, QUEST_BONUS_XP } from '../lib/quests'
 import { splitUnitTitle, titleCase } from '../lib/titleCase'
 
@@ -60,6 +61,11 @@ export default function Home() {
               <BookOpen size={22} strokeWidth={2.25} aria-hidden />
             </Link>
           )}
+          {!course.lang && course.cost ? (
+            <span className="card-cost" aria-label={`Writing this course cost about ${costText(course.cost)}`}>
+              {costText(course.cost)}
+            </span>
+          ) : null}
           <span className="course-emoji">{course.emoji}</span>
           <div>
             <h1>{titleCase(course.title)}</h1>

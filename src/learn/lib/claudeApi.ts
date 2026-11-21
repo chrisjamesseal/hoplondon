@@ -8,8 +8,14 @@ export const MODEL = 'claude-sonnet-5-5'
 export const PRICE = { input: 2, output: 10 }
 /** Estimated cost in dollars of a request that used these tokens */
 export const costOf = (u: { input: number; output: number }): number => (u.input * PRICE.input + u.output * PRICE.output) / 1e6
-/** For a course card: what writing it cost, or nothing if Claude didn't write it */
-export const costText = (usd?: number): string => (usd ? ` · cost about ${usd < 0.01 ? 'under $0.01' : '$' + usd.toFixed(2)}` : '')
+/** Pounds per dollar, for showing costs in £. Update this if the exchange rate moves a lot. */
+export const GBP_PER_USD = 0.76
+/** What writing a course cost, in pounds, or nothing if Claude didn't write it */
+export const costText = (usd?: number): string => {
+  if (!usd) return ''
+  const gbp = usd * GBP_PER_USD
+  return gbp < 0.01 ? 'Under 1p' : '£' + gbp.toFixed(2)
+}
 
 const ENDPOINT = 'https://api.anthropic.com/v1/messages'
 const MAX_PDF_BYTES = 30 * 1024 * 1024
