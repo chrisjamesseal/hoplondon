@@ -15,7 +15,6 @@ export default function CourseCategories() {
   const hasDrafts = (useLearn((s) => s.drafts) ?? []).some((d) => !d.courseId)
   const navigate = useNavigate()
   const active = useActiveCourse()
-  const activeCp = active ? courseProgress(active, progress) : null
   const archivedIds = archived ?? []
   // Archived courses live on their own shelf, so they never count in the groups or the list
   const live = courses.filter((c) => !archivedIds.includes(c.id))
@@ -108,27 +107,6 @@ export default function CourseCategories() {
               )
             })}
           </div>
-        )}
-        {view === 'groups' && active && activeCp && (
-          <Card className="course-row active">
-            <button className="course-row-main" onClick={() => navigate('/')}>
-              <span className="course-emoji">{active.emoji}</span>
-              <div className="grow">
-                <div className="row-between">
-                  <strong>{titleCase(active.title)}</strong>
-                  <span className="pill">Learning</span>
-                </div>
-                <div className="tiny muted">
-                  {active.units.length} units · {activeCp.total} lessons
-                </div>
-                <div className="row-between tiny">
-                  <ProgressBar value={activeCp.ratio} color={ragOf(activeCp.ratio)} height={10} label={`${active.title} progress`} />
-                  <span className={`pct rag-text ${ragOf(activeCp.ratio)}`}>{Math.round(activeCp.ratio * 100)}%</span>
-                </div>
-              </div>
-            </button>
-            <BuildStatus course={active} />
-          </Card>
         )}
         {view === 'groups' && (
         <div className="cat-grid">
