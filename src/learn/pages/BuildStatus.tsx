@@ -2,6 +2,7 @@ import { LoaderCircle } from 'lucide-react'
 import { useLearn } from '../store'
 import { cancelDraft, finishDraft, runDraft } from '../jobs'
 import { progressOf } from '../lib/draftSteps'
+import { ProgressBar } from '../components'
 import type { Course, Draft } from '../types'
 
 /** The saved job for a course that is still being written */
@@ -14,6 +15,7 @@ export function BuildStatus({ course }: { course: Course }) {
   const d = useBuilding(course)
   if (!d) return null
   const writing = d.status === 'writing'
+  const { lessons: n, total, ratio } = progressOf(d)
   return (
     <div className="build-status">
       <div className="draft-badge">
@@ -25,6 +27,14 @@ export function BuildStatus({ course }: { course: Course }) {
           <span className="pill muted-pill">Paused</span>
         )}
       </div>
+      {total > 0 && (
+        <div className="build-progress">
+          <div className="tiny muted">
+            {n} of {total} lessons written
+          </div>
+          <ProgressBar value={Math.max(ratio, 0.04)} color={writing ? 'blue' : 'amber'} height={8} label="Writing progress" />
+        </div>
+      )}
       <p className="tiny muted draft-note">
         {writing ? `${d.activity ?? 'Writing'}. You can start learning now. New lessons appear as they finish.` : (d.note ?? 'Paused.')}
       </p>
