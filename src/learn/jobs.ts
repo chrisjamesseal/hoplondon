@@ -135,69 +135,76 @@ export function runDraft(id: string) {
   const patch = (p: Partial<Draft>) => get(id) && useLearn.getState().patchDraft(id, p)
   patch({ status: 'writing', note: undefined, auto: false })
   void (async () => {
-    try {
-      // A draft from before lessons were written one by one has no plan, so it starts again
-      if (!get(id)!.outline && get(id)!.units.length) patch({ units: [] })
-      for (;;) {
-        const d = get(id)
-        if (!d) return
-        const step = nextStep(d)
-        if (!step) break
-        patch({ activity: describeStep(d, step) })
-        const text = await writeWithRetry(() => ({ key: getApiKey(), prompt: promptFor(get(id)!, step), pdf: pdfs.get(id), readWeb: d.readWeb, maxTokens: step.kind === 'lesson' ? 12000 : 8000 }), ctl.signal, () => {})
-        const cur = get(id)
-        if (!cur) return
-        const obj = parseCourseJson(text) as Record<string, unknown>
-        if (step.kind === 'outline') {
-          const { head, outline } = outlineFrom(obj)
-          if (!outline.length) throw new Error('Claude sent a plan Leap could not read. Try again.')
-          patch({ head, outline, units: [] })
-        } else if (step.kind === 'lesson') {
-          const l = (obj.lesson && typeof obj.lesson === 'object' ? obj.lesson : obj) as Record<string, unknown>
-          const o = cur.outline![step.u]
-          const raw = { ...l, title: str(l.title) || o.lessons[step.l].title, emoji: str(l.emoji) || o.lessons[step.l].emoji }
-          const incomplete = new Error('That lesson came back incomplete. Try again.')
-          const st = useLearn.getState()
-          if (!cur.courseId) {
-            // The first lesson makes the course, which can be played from here while the rest is written
-            let course
-            try {
-              course = normalizeCourse({ ...cur.head, units: [{ title: o.title, emoji: o.emoji, description: o.description, lessons: [raw] }] }, cur.source, 'claude')
-            } catch {
-              throw incomplete
+    // A hiccup on one step (Claude busy, a reply that would not read) is tried again before the course pauses
+    for (let fails = 0; ; ) {
+      try {
+        // A draft from before lessons were written one by one has no plan, so it starts again
+        if (!get(id)!.outline && get(id)!.units.length) patch({ units: [] })
+        for (;;) {
+          const d = get(id)
+          if (!d) return
+          const step = nextStep(d)
+          if (!step) break
+          patch({ activity: describeStep(d, step) })
+          const text = await writeWithRetry(() => ({ key: getApiKey(), prompt: promptFor(get(id)!, step), pdf: pdfs.get(id), readWeb: d.readWeb, maxTokens: step.kind === 'lesson' ? 12000 : 8000 }), ctl.signal, () => {})
+          const cur = get(id)
+          if (!cur) return
+          const obj = parseCourseJson(text) as Record<string, unknown>
+          if (step.kind === 'outline') {
+            const { head, outline } = outlineFrom(obj)
+            if (!outline.length) throw new Error('Claude sent a plan Leap could not read. Try again.')
+            patch({ head, outline, units: [] })
+          } else if (step.kind === 'lesson') {
+            const l = (obj.lesson && typeof obj.lesson === 'object' ? obj.lesson : obj) as Record<string, unknown>
+            const o = cur.outline![step.u]
+            const raw = { ...l, title: str(l.title) || o.lessons[step.l].title, emoji: str(l.emoji) || o.lessons[step.l].emoji }
+            const incomplete = new Error('That lesson came back incomplete. Try again.')
+            const st = useLearn.getState()
+            if (!cur.courseId) {
+              // The first lesson makes the course, which can be played from here while the rest is written
+              let course
+              try {
+                course = normalizeCourse({ ...cur.head, units: [{ title: o.title, emoji: o.emoji, description: o.description, lessons: [raw] }] }, cur.source, 'claude')
+              } catch {
+                throw incomplete
+              }
+              course.building = { draftId: id, total: cur.outline!.reduce((n, u) => n + u.lessons.length, 0) }
+              const before = st.activeCourseId
+              st.addCourse(course)
+              if (before) st.setActiveCourse(before)
+              patch({ courseId: course.id })
+            } else {
+              const lesson = normalizeLesson(raw, cur.source)
+              if (!lesson) throw incomplete
+              st.appendLesson(cur.courseId, o, step.u, lesson)
             }
-            course.building = { draftId: id, total: cur.outline!.reduce((n, u) => n + u.lessons.length, 0) }
-            const before = st.activeCourseId
-            st.addCourse(course)
-            if (before) st.setActiveCourse(before)
-            patch({ courseId: course.id })
+            const units = [...cur.units] as { lessons: unknown[] }[]
+            const built = units[step.u] ?? { title: o.title, emoji: o.emoji, description: o.description, lessons: [] }
+            units[step.u] = { ...built, lessons: [...built.lessons, raw] }
+            patch({ units })
           } else {
-            const lesson = normalizeLesson(raw, cur.source)
-            if (!lesson) throw incomplete
-            st.appendLesson(cur.courseId, o, step.u, lesson)
+            // A quiz that comes back short is skipped rather than blocking the course
+            const units = [...cur.units] as { lessons: unknown[]; quiz?: unknown[] }[]
+            units[step.u] = { ...units[step.u], quiz: Array.isArray(obj.quiz) ? obj.quiz : [] }
+            if (cur.courseId) useLearn.getState().setUnitQuiz(cur.courseId, step.u, normalizeQuiz(obj.quiz))
+            patch({ units })
           }
-          const units = [...cur.units] as { lessons: unknown[] }[]
-          const built = units[step.u] ?? { title: o.title, emoji: o.emoji, description: o.description, lessons: [] }
-          units[step.u] = { ...built, lessons: [...built.lessons, raw] }
-          patch({ units })
-        } else {
-          // A quiz that comes back short is skipped rather than blocking the course
-          const units = [...cur.units] as { lessons: unknown[]; quiz?: unknown[] }[]
-          units[step.u] = { ...units[step.u], quiz: Array.isArray(obj.quiz) ? obj.quiz : [] }
-          if (cur.courseId) useLearn.getState().setUnitQuiz(cur.courseId, step.u, normalizeQuiz(obj.quiz))
-          patch({ units })
+          fails = 0
         }
-      }
-      patch({ activity: undefined })
-      finishDraft(id)
-    } catch (e) {
-      if (!(e instanceof DOMException && e.name === 'AbortError')) {
+        patch({ activity: undefined })
+        return finishDraft(id)
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') break
+        if (++fails < 3) {
+          await new Promise((r) => setTimeout(r, 3000 * fails))
+          if (ctl.signal.aborted) break
+          continue
+        }
         patch({ status: 'paused', activity: undefined, auto: e instanceof ConnectionDropped, note: e instanceof Error ? e.message : 'Something went wrong.' })
+        break
       }
-    } finally {
-      live.delete(id)
     }
-  })()
+  })().finally(() => live.delete(id))
 }
 
 /** Stops writing and keeps the lessons that are in */
