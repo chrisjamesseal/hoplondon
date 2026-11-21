@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { easeIntoTyping, lessonsOn, bumpStreak, courseProgress, HEART_REGEN_MS, isUnlocked, levelInfo, liveStreak, regenHearts, sameAnswer } from './gamify'
+import { easeIntoTyping, lessonsOn, bumpStreak, courseProgress, HEART_REGEN_MS, isCourseComplete, isUnlocked, levelInfo, liveStreak, regenHearts, sameAnswer } from './gamify'
 import { DEMO_COURSE } from '../demo'
 import type { Course, Exercise } from '../types'
 
@@ -195,5 +195,16 @@ describe('easeIntoTyping', () => {
   it('leaves review of older levels alone', () => {
     const u = unit(1)
     expect(easeIntoTyping(course(u), u, 0, u.lessons[0].exercises, 's')).toEqual(u.lessons[0].exercises)
+  })
+})
+
+describe('isCourseComplete', () => {
+  const all = (c: Course) => Object.fromEntries(c.units.flatMap((u) => [...u.lessons.map((l) => l.id), `quiz:${u.id}`]).map((id) => [id, { completions: 1, bestAccuracy: 1, lastCompleted: '' }]))
+  it('is complete once every step is done', () => {
+    expect(isCourseComplete(DEMO_COURSE, all(DEMO_COURSE))).toBe(true)
+  })
+  it('is not complete while later lessons are still being written', () => {
+    const c = { ...DEMO_COURSE, building: { draftId: 'd', total: 99 } }
+    expect(isCourseComplete(c, all(c))).toBe(false)
   })
 })

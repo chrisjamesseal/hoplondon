@@ -271,8 +271,9 @@ export function nextStep(course: Course, progress: Record<string, LessonProgress
   return pathSteps(course).find((s) => !stepDone(course, s, progress))
 }
 
+/** A course still being written is never complete, even when every lesson written so far is done */
 export function isCourseComplete(course: Course, progress: Record<string, LessonProgress>): boolean {
-  return !nextStep(course, progress)
+  return !course.building && !nextStep(course, progress)
 }
 
 function pickRoundRobin<T>(groups: T[][], n: number, rand: () => number): T[] {
