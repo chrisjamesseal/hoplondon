@@ -1,9 +1,8 @@
-import { CircleAlert, CircleCheck, House, Library, LoaderCircle, Map as MapIcon, Sparkles, UserRound } from 'lucide-react'
+import { House, Library, Map as MapIcon, Sparkles, UserRound } from 'lucide-react'
 import { useEffect } from 'react'
-import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useLearn } from './store'
 import { setPlayInSilent } from './lib/sound'
-import { pauseStale, resumeInterrupted, useJobs } from './jobs'
 import { dayKey, liveStreak } from './lib/gamify'
 import Home from './pages/Home'
 import Path from './pages/Path'
@@ -26,56 +25,6 @@ const NAV = [
   { to: '/profile', label: 'Profile', Icon: UserRound },
 ]
 
-/** Progress for courses being written in the background */
-function JobBanner() {
-  const { jobs, cancel, dismiss, retry } = useJobs()
-  const setActive = useLearn((s) => s.setActiveCourse)
-  const navigate = useNavigate()
-  if (!jobs.length) return null
-  return (
-    <div className="jobs">
-      {jobs.map((j) => (
-        <div key={j.id} className={`job ${j.status}`}>
-          <span className={`job-icon ${j.status}`} role="img" aria-label={j.status === 'running' ? 'Writing' : j.status === 'done' ? 'Ready' : 'Failed'}>
-            {j.status === 'running' ? <LoaderCircle size={26} strokeWidth={2.5} /> : j.status === 'done' ? <CircleCheck size={26} strokeWidth={2.5} /> : <CircleAlert size={26} strokeWidth={2.5} />}
-          </span>
-          <div className="job-text">
-            <strong className="job-title">{j.title}</strong>
-            {j.status === 'error' && <span className="tiny">{j.error}</span>}
-          </div>
-          {j.status === 'running' && (
-            <button className="btn ghost job-btn" onClick={() => cancel(j.id)}>
-              Cancel
-            </button>
-          )}
-          {j.status === 'done' && (
-            <button
-              className="btn green job-btn"
-              onClick={() => {
-                if (j.courseId) setActive(j.courseId)
-                dismiss(j.id)
-                navigate('/')
-              }}
-            >
-              Open
-            </button>
-          )}
-          {j.status === 'error' && (
-            <button className="btn green job-btn" onClick={() => retry(j.id)}>
-              Retry
-            </button>
-          )}
-          {j.status !== 'running' && (
-            <button className="job-x" aria-label="Dismiss" onClick={() => dismiss(j.id)}>
-              ✕
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
-
 /** Hearts sit at the top right of the page. Courses and Profile don't show them. */
 function HeartsRow() {
   const hearts = useLearn((s) => s.hearts)
@@ -97,16 +46,11 @@ export default function LearnApp() {
   const inLesson = /^\/(lesson|practice|review|quiz|jump)/.test(pathname)
 
   useEffect(() => {
-    pauseStale()
-    resumeInterrupted()
-    const back = () => document.visibilityState === 'visible' && resumeInterrupted()
-    document.addEventListener('visibilitychange', back)
     syncHearts()
     useFreezeIfNeeded()
     const t = setInterval(syncHearts, 30_000)
     return () => {
       clearInterval(t)
-      document.removeEventListener('visibilitychange', back)
     }
   }, [syncHearts, useFreezeIfNeeded])
 
@@ -155,7 +99,6 @@ export default function LearnApp() {
       </nav>
       <div className="content">
         <main className="page">
-          {!/^\/(lesson|quiz|practice|jump)/.test(pathname) && <JobBanner />}
           {!/^\/(courses|profile|create|$)/.test(pathname) && <HeartsRow />}
           <div key={pathname} className="route-fade">
           <Routes>

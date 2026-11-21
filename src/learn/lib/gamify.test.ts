@@ -203,8 +203,4 @@ describe('isCourseComplete', () => {
   it('is complete once every step is done', () => {
     expect(isCourseComplete(DEMO_COURSE, all(DEMO_COURSE))).toBe(true)
   })
-  it('is not complete while later lessons are still being written', () => {
-    const c = { ...DEMO_COURSE, building: { draftId: 'd', total: 99 } }
-    expect(isCourseComplete(c, all(c))).toBe(false)
-  })
 })

@@ -72,8 +72,7 @@ export function flatLessons(course: Course): Lesson[] {
 export function courseProgress(course: Course, progress: Record<string, LessonProgress>) {
   const lessons = flatLessons(course)
   const done = lessons.filter((l) => progress[l.id]?.completions).length
-  // A course still being written counts against the lessons planned, not just the ones in so far
-  const total = Math.max(lessons.length, course.building?.total ?? 0)
+  const total = lessons.length
   return { done, total, ratio: total ? done / total : 0 }
 }
 
@@ -238,18 +237,13 @@ export function passMark(questions: number): number {
   return Math.ceil(questions * PASS_RATE)
 }
 
-/** While a course is still being written, a unit's quiz waits until the quiz itself is in, or the next unit has started */
-export function quizReady(course: Course, ui: number): boolean {
-  return !course.building || !!course.units[ui].quiz || ui < course.units.length - 1
-}
-
 /** Lessons and the quiz that closes each unit, in the order they unlock */
 export type PathStep = { kind: 'lesson'; id: string; unitIndex: number } | { kind: 'quiz'; id: string; unitIndex: number }
 
 export function pathSteps(course: Course): PathStep[] {
   return course.units.flatMap((u, ui) => [
     ...u.lessons.map((l): PathStep => ({ kind: 'lesson', id: l.id, unitIndex: ui })),
-    ...(quizReady(course, ui) ? [{ kind: 'quiz', id: quizKey(u.id), unitIndex: ui } as PathStep] : []),
+    { kind: 'quiz', id: quizKey(u.id), unitIndex: ui },
   ])
 }
 
@@ -271,9 +265,8 @@ export function nextStep(course: Course, progress: Record<string, LessonProgress
   return pathSteps(course).find((s) => !stepDone(course, s, progress))
 }
 
-/** A course still being written is never complete, even when every lesson written so far is done */
 export function isCourseComplete(course: Course, progress: Record<string, LessonProgress>): boolean {
-  return !course.building && !nextStep(course, progress)
+  return !nextStep(course, progress)
 }
 
 function pickRoundRobin<T>(groups: T[][], n: number, rand: () => number): T[] {

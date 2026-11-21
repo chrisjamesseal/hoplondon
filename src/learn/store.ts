@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Course, Draft, Exercise, Lesson, LessonProgress, Unit } from './types'
-import { uid } from './lib/normalize'
+import type { Course, LessonProgress, Unit } from './types'
 import { DEMO_COURSE } from './demo'
 import { buildLanguageCourse, languageLabel, LANGUAGES } from './lib/phrasebook'
 import { WEAK_CAP } from './lib/engage'
@@ -39,19 +38,7 @@ interface LearnState {
   /** Quest bonuses already taken, as day:quest */
   claimed: string[]
 
-  /** Courses still being written, saved as they go */
-  drafts: Draft[]
-
   addCourse: (c: Course) => void
-  /** Adds a finished lesson to a course still being written, starting its unit if needed */
-  appendLesson: (courseId: string, unit: { title: string; emoji?: string; description?: string }, index: number, lesson: Lesson) => void
-  setUnitQuiz: (courseId: string, index: number, quiz: Exercise[] | undefined) => void
-  /** The course has all the lessons it will get */
-  endBuilding: (courseId: string) => void
-  addCost: (courseId: string, usd: number) => void
-  saveDraft: (d: Draft) => void
-  patchDraft: (id: string, p: Partial<Draft>) => void
-  removeDraft: (id: string) => void
   /** Adds new units to the end of a course and raises its level, keeping all progress */
   extendCourse: (id: string, units: Unit[]) => void
   /** Swaps one difficulty level's units for rewritten ones, keeping progress by position */
@@ -105,27 +92,7 @@ export const useLearn = create<LearnState>()(
       daily: { day: '', combo: 0, perfect: 0 },
       reviewDay: null,
       claimed: [],
-      drafts: [],
 
-      appendLesson: (courseId, unit, index, lesson) =>
-        set((s) => ({
-          courses: s.courses.map((c) => {
-            if (c.id !== courseId) return c
-            const units = [...c.units]
-            const u = units[index] ?? { id: uid('u_'), title: unit.title, emoji: unit.emoji, description: unit.description ?? '', lessons: [] }
-            units[index] = { ...u, lessons: [...u.lessons, lesson] }
-            return { ...c, units }
-          }),
-        })),
-      setUnitQuiz: (courseId, index, quiz) =>
-        set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, units: c.units.map((u, i) => (i === index ? { ...u, quiz } : u)) } : c)) })),
-      endBuilding: (courseId) =>
-        set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, building: undefined } : c)) })),
-      addCost: (courseId, usd) =>
-        set((s) => ({ courses: s.courses.map((c) => (c.id === courseId ? { ...c, cost: (c.cost ?? 0) + usd } : c)) })),
-      saveDraft: (d) => set((s) => ({ drafts: [d, ...(s.drafts ?? []).filter((x) => x.id !== d.id)] })),
-      patchDraft: (id, p) => set((s) => ({ drafts: (s.drafts ?? []).map((d) => (d.id === id ? { ...d, ...p, updatedAt: Date.now() } : d)) })),
-      removeDraft: (id) => set((s) => ({ drafts: (s.drafts ?? []).filter((d) => d.id !== id) })),
       addCourse: (c) => set((s) => ({ courses: [c, ...s.courses], activeCourseId: c.id })),
       extendCourse: (id, units) =>
         set((s) => ({
@@ -282,12 +249,22 @@ export const useLearn = create<LearnState>()(
     }),
     {
       name: 'leap-v1',
-      version: 7,
+      version: 8,
       migrate: (persisted, version) => {
         // v1 stored a Claude API key; drop it
         const { apiKey: _drop, ...rest } = (persisted ?? {}) as Record<string, unknown>
         // v7: playing on silent pauses other apps' music, so it is now off until someone turns it on
         if (version < 7) rest.soundInSilent = false
+        // v8 removed automatic writing: drop unfinished jobs and the saved API key, and keep what each course already has
+        if (version < 8) {
+          delete rest.drafts
+          if (Array.isArray(rest.courses)) rest.courses = (rest.courses as (Course & { building?: unknown })[]).map(({ building: _b, ...c }) => c)
+          try {
+            localStorage.removeItem('leap-api-key')
+          } catch {
+            /* storage blocked */
+          }
+        }
         // v3 rewrote the starter course; lesson ids are unchanged so progress carries over
         if (Array.isArray(rest.courses)) {
           rest.courses = (rest.courses as Course[]).map((c) => (c.id === DEMO_COURSE.id ? DEMO_COURSE : c))

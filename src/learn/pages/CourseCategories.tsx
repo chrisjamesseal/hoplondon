@@ -7,20 +7,15 @@ import { groupByCategory } from '../lib/categorise'
 import { Card, ProgressBar } from '../components'
 import { ragOf } from '../lib/rag'
 import { titleCase } from '../lib/titleCase'
-import DraftCards from './DraftCards'
-import { BuildStatus } from './BuildStatus'
 
 export default function CourseCategories() {
   const { courses, progress, archived, setActiveCourse } = useLearn()
-  const hasDrafts = (useLearn((s) => s.drafts) ?? []).some((d) => !d.courseId)
   const navigate = useNavigate()
   const active = useActiveCourse()
   const archivedIds = archived ?? []
   // Archived courses live on their own shelf, so they never count in the groups or the list
   const live = courses.filter((c) => !archivedIds.includes(c.id))
-  // Courses still being written sit above the groups in Grouped view, and join their group once finished
-  const writing = live.filter((c) => c.building)
-  const groups = groupByCategory(live.filter((c) => !c.building))
+  const groups = groupByCategory(live)
   const [view, setView] = useState<'groups' | 'list'>(() => {
     try {
       return localStorage.getItem('leap-courses-view') === 'groups' ? 'groups' : 'list'
@@ -61,9 +56,7 @@ export default function CourseCategories() {
         </div>
       )}
 
-      <DraftCards />
-
-      {courses.length === 0 && !hasDrafts ? (
+      {courses.length === 0 ? (
         <Card className="empty">
           <div className="big-emoji">📚</div>
           <h2>No Courses Yet</h2>
@@ -104,42 +97,6 @@ export default function CourseCategories() {
                       </div>
                     </div>
                   </button>
-                  <BuildStatus course={c} />
-                </Card>
-              )
-            })}
-          </div>
-        )}
-        {view === 'groups' && writing.length > 0 && (
-          <div className="course-list">
-            {writing.map((c) => {
-              const cp = courseProgress(c, progress)
-              const isActive = c.id === active?.id
-              return (
-                <Card key={c.id} className={`course-row ${isActive ? 'active' : ''}`}>
-                  <button
-                    className="course-row-main"
-                    onClick={() => {
-                      setActiveCourse(c.id)
-                      navigate('/')
-                    }}
-                  >
-                    <span className="course-emoji">{c.emoji}</span>
-                    <div className="grow">
-                      <div className="row-between">
-                        <strong>{titleCase(c.title)}</strong>
-                        {isActive && <span className="pill">Learning</span>}
-                      </div>
-                      <div className="tiny muted">
-                        {c.units.length} units · {cp.total} lessons
-                      </div>
-                      <div className="row-between tiny">
-                        <ProgressBar value={cp.ratio} color={ragOf(cp.ratio)} height={10} label={`${c.title} progress`} />
-                        <span className={`pct rag-text ${ragOf(cp.ratio)}`}>{Math.round(cp.ratio * 100)}%</span>
-                      </div>
-                    </div>
-                  </button>
-                  <BuildStatus course={c} />
                 </Card>
               )
             })}
@@ -147,7 +104,7 @@ export default function CourseCategories() {
         )}
         {view === 'groups' && (
         <div className="cat-grid">
-          {groups.length === 0 && writing.length === 0 && courses.length > 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
+          {groups.length === 0 && courses.length > 0 && <p className="muted small">Everything is in the archive. Bring a course back to see it here.</p>}
           {groups.map(({ category, courses: list }) => {
             const totals = list.reduce(
               (t, c) => {

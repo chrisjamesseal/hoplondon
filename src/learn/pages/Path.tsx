@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActiveCourse, useLearn } from '../store'
-import { flatLessons, nextStep, quizKey, quizReady, stepDone, stepUnlocked } from '../lib/gamify'
-import { useBuilding, WritingNext } from './BuildStatus'
+import { flatLessons, nextStep, quizKey, stepDone, stepUnlocked } from '../lib/gamify'
 import { Check, Crown, Lock, Trophy } from 'lucide-react'
 import { iconFor } from '../lib/icons'
 import { plainText } from './RichText'
@@ -65,7 +64,6 @@ const SNAKE = [0, 44, 70, 44, 0, -44, -70, -44]
 
 export default function Path() {
   const course = useActiveCourse()
-  const building = useBuilding(course)
   const { progress } = useLearn()
   const navigate = useNavigate()
   // The step finished a moment ago gets a little celebration, and the one it opened pops in
@@ -185,7 +183,6 @@ export default function Path() {
                   </div>
                 )
               })}
-              {quizReady(course, ui) && (
               <div className="node-wrap quiz-wrap">
                 {next?.id === quizId && <div className="start-bubble">QUIZ</div>}
                 <button
@@ -198,13 +195,11 @@ export default function Path() {
                 </button>
                 <div className="node-label">Unit Quiz</div>
               </div>
-              )}
             </div>
           </section>
         )
       })}
-      {!next && building && <WritingNext draft={building} />}
-      {!next && !building && (
+      {!next && (
         <div className="path-end">
           <strong>🏆 Course Complete!</strong>
           <button className="btn green wide" onClick={() => navigate(`/extend/${course.id}`)}>

@@ -5,8 +5,6 @@ import { Card } from '../components'
 import { buildRewritePrompt, CLAUDE_URL, levelName, parseCourseJson } from '../lib/claudePrompt'
 import { normalizeCourse } from '../lib/normalize'
 import { titleCase } from '../lib/titleCase'
-import AutoGenerate, { ModeSwitch, type Mode } from './AutoGenerate'
-import { getApiKey } from '../lib/claudeApi'
 
 const MAX_LINK_PROMPT = 6000
 
@@ -18,7 +16,6 @@ export default function RewriteCourse() {
   const levels = useMemo(() => [...new Set((course?.units ?? []).map((u) => u.level ?? 1))].sort((a, b) => a - b), [course])
   const [level, setLevel] = useState(levels[0] ?? 1)
   const [notes, setNotes] = useState('')
-  const [mode, setMode] = useState<Mode>(getApiKey() ? 'auto' : 'manual')
   const [copied, setCopied] = useState<'ok' | 'manual' | null>(null)
   const [pasted, setPasted] = useState('')
   const [error, setError] = useState('')
@@ -110,16 +107,6 @@ export default function RewriteCourse() {
           />
         </div>
 
-        <ModeSwitch mode={mode} onChange={setMode} />
-        {mode === 'auto' ? (
-          <AutoGenerate
-            prompt={prompt}
-            ready={ready}
-            label="Rewrite course"
-            title={`${levelName(level)} level of ${titleCase(course.title)}`}
-            finish={apply}
-          />
-        ) : (
           <ol className="steps">
             <li className="step">
               <span className="step-num">1</span>
@@ -185,7 +172,6 @@ export default function RewriteCourse() {
               </div>
             </li>
           </ol>
-        )}
       </Card>
     </div>
   )
