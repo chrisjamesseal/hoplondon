@@ -318,10 +318,10 @@ button:disabled { cursor: default; }
 .week-day { font-size: 13px; color: var(--muted); }
 .week-day.today { color: var(--blue); font-weight: 900; }
 .badges { display: grid; gap: 14px; }
-.badge { display: flex; gap: 14px; align-items: center; opacity: 0.75; }
+.badge { display: flex; gap: 14px; align-items: stretch; opacity: 0.75; }
 .badge.got { opacity: 1; }
 .badge .pbar { margin-top: 6px; height: 8px; }
-.badge-icon { font-size: 30px; width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; background: var(--surface-2); flex-shrink: 0; filter: grayscale(1); }
+.badge-icon { font-size: 30px; width: 54px; min-height: 54px; border-radius: 16px; display: grid; place-items: center; background: var(--surface-2); flex-shrink: 0; filter: grayscale(1); }
 .badge.got .badge-icon { background: color-mix(in srgb, var(--gold) 30%, var(--bg)); filter: none; }
 .goal-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 .goal-opt { display: flex; flex-direction: column; padding: 12px; border: 2px solid var(--border); border-radius: 14px; background: var(--surface); text-align: left; box-shadow: 0 3px 0 var(--border); }
